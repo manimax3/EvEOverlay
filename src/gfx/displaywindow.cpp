@@ -119,3 +119,5 @@ eo::DisplayWindow::~DisplayWindow()
 void eo::DisplayWindow::setClipboard(const char *content) { glfwSetClipboardString(mWindow, content); }
 
 const char *eo::DisplayWindow::getClipboard() const { return glfwGetClipboardString(mWindow); }
+
+double eo::DisplayWindow::getTime() { return glfwGetTime(); }

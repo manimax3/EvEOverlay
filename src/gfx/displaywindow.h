@@ -17,7 +17,8 @@ namespace eo {
 
 class DisplayWindow {
 public:
-    static void pollEvents();
+    static void   pollEvents();
+    static double getTime();
 
 public:
     explicit DisplayWindow(int width, int height, std::string name, int posx, int posy);
