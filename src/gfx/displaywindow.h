@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+#include "../util.h"
+
 struct GLFWwindow;
 
 namespace eo {
@@ -25,8 +27,12 @@ public:
 
     void frame();
 
+    math::vec2  getFramebufferSize() const;
+    void        setClipboard(const char *content);
+    const char *getClipboard() const;
+
 protected:
-	virtual void renderContents();
+    virtual void renderContents();
 
     virtual void keyboardInput(int key, int scancode, int action, int mods) {}
     virtual void characterInput(unsigned int codepoint) {}
@@ -34,6 +40,9 @@ protected:
     virtual void cursorenterInput(int entered) {}
     virtual void mousebuttonInput(int button, int action, int mods) {}
     virtual void scrollInput(double xoffset, double yoffset) {}
+
+    virtual void onFramebufferResize(int widht, int height) {}
+    void         framebufferResizeCallback(int width, int height);
 
 private:
     GLFWwindow *mWindow = nullptr;

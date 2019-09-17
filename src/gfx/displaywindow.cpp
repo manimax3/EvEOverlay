@@ -33,7 +33,7 @@ void eo::DisplayWindow::pollEvents() { glfwPollEvents(); }
 
 eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int posx, int posy)
 {
-	log::info("Creating a new window {0}", name);
+    log::info("Creating a new window {0}", name);
 
     if (!initGlfw()) {
         log::error("Could not initialize glfw!");
@@ -70,6 +70,9 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
     });
     glfwSetScrollCallback(
         mWindow, [](auto *window, auto... args) { static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->scrollInput(args...); });
+    glfwSetFramebufferSizeCallback(mWindow, [](auto *window, auto... args) {
+        static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->framebufferResizeCallback(args...);
+    });
 
     glfwMakeContextCurrent(mWindow);
     gladLoadGLLoader((GLADloadproc)(glfwGetProcAddress));
@@ -80,13 +83,28 @@ bool eo::DisplayWindow::shouldWindowClose() const { return glfwWindowShouldClose
 void eo::DisplayWindow::frame()
 {
     glfwMakeContextCurrent(mWindow);
-	renderContents();
+    renderContents();
     glfwSwapBuffers(mWindow);
 }
 
-void eo::DisplayWindow::renderContents() {
-	glClearColor(1., .0, .0, .25);
-	glClear(GL_COLOR_BUFFER_BIT);
+void eo::DisplayWindow::renderContents()
+{
+    glClearColor(1., .0, .0, .25);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void eo::DisplayWindow::framebufferResizeCallback(int width, int height)
+{
+    glfwMakeContextCurrent(mWindow);
+    glViewport(0, 0, width, height);
+    onFramebufferResize(width, height);
+}
+
+eo::math::vec2 eo::DisplayWindow::getFramebufferSize() const
+{
+    int x, y;
+    glfwGetFramebufferSize(mWindow, &x, &y);
+    return { static_cast<float>(x), static_cast<float>(y) };
 }
 
 eo::DisplayWindow::~DisplayWindow()
@@ -97,3 +115,7 @@ eo::DisplayWindow::~DisplayWindow()
     }
     terminateGlfw();
 }
+
+void eo::DisplayWindow::setClipboard(const char *content) { glfwSetClipboardString(mWindow, content); }
+
+const char *eo::DisplayWindow::getClipboard() const { return glfwGetClipboardString(mWindow); }
