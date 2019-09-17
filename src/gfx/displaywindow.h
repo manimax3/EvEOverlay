@@ -45,7 +45,6 @@ protected:
     virtual void onFramebufferResize(int widht, int height) {}
     void         framebufferResizeCallback(int width, int height);
 
-private:
     GLFWwindow *mWindow = nullptr;
 };
 }

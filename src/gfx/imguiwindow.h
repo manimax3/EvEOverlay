@@ -11,11 +11,13 @@ public:
 
 protected:
     void         renderContents() override;
-    virtual void renderImguiContents() {}
+    virtual void renderImguiContents();
 
 private:
     ImGuiContext *mContext = nullptr;
     uint          mVbo, mIbo, mVao, mFontTexture;
     uint          mShaderProgram;
+
+    double mLastFrame = 0.0;
 };
 }

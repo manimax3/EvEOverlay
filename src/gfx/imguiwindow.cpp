@@ -1,46 +1,62 @@
 #include "imguiwindow.h"
+#include "../logging.h"
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 #include "glad/glad.h"
+#include "glm/gtc/matrix_transform.hpp"
 #include "imgui.h"
 
 namespace {
 const char *vertex_shader = R"glsl(
-		#version 330 core
-		layout(location = 0) in vec2 Position;
-		layout(location = 1) in vec2 uv;
-		layout(location = 2) in vec4 color;
-		
-		uniform mat4 projection;
+#version 330 core
+layout(location = 0) in vec2 Position;
+layout(location = 1) in vec2 uv;
+layout(location = 2) in vec4 color;
 
-		out vec3 Frag_UV;
-		out vec4 Frag_Color;
+uniform mat4 projection;
 
-		void main()
-		{
-			Frag_UV = uv;
-			Frag_Color = color;
-			gl_Position = projection * vec4(Position.xy, 0, 1);
-		}
+out vec2 Frag_UV;
+out vec4 Frag_Color;
+
+void main()
+{
+	Frag_UV = uv;
+	Frag_Color = color;
+	gl_Position = projection * vec4(Position.xy, 0, 1);
+}
 	)glsl";
 
 const char *fragment_shader = R"glsl(
-		#version 330 core
-		
-		in vec3 Frag_UV;
-		in vec4 Frag_Color;
+#version 330 core
 
-		uniform sampler2D texture;
+in vec2 Frag_UV;
+in vec4 Frag_Color;
 
-		out vec4 color;
+uniform sampler2D tex;
 
-		void main()
-		{
-			color = Frag_Color * texture(tex, Frag_UV.st);
-		}
-	)glsl";
+out vec4 color;
+
+void main()
+{
+	color = Frag_Color * texture(tex, Frag_UV.st);
 }
+	)glsl";
+
+void glcheck(int line)
+{
+    GLenum error = glGetError();
+    if (error == GL_NO_ERROR)
+        return;
+    while (error != GL_NO_ERROR) {
+
+        eo::log::error("Opengl error: {0} before line {1}", error, line);
+
+        error = glGetError();
+    }
+}
+}
+#define GLCHECK glcheck(__LINE__);
 
 eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, int ypos)
     : DisplayWindow(width, height, std::move(name), xpos, ypos)
@@ -73,6 +89,8 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
 
     glBindVertexArray(0);
 
+    GLCHECK
+
     {
         uint32 *pixels;
         int     width, height;
@@ -80,9 +98,17 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
 
         glGenTextures(1, &mFontTexture);
         glBindTexture(GL_TEXTURE_2D, mFontTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32I, width, height, 0, GL_RGBA, GL_UNSIGNED_INT, pixels);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         io.Fonts->TexID = reinterpret_cast<void *>(mFontTexture);
     }
+    GLCHECK
 
     {
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -98,6 +124,7 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
         glAttachShader(mShaderProgram, fragmentShader);
         glLinkProgram(mShaderProgram);
     }
+    GLCHECK
 
     io.KeyMap[ImGuiKey_Tab]        = GLFW_KEY_TAB;
     io.KeyMap[ImGuiKey_LeftArrow]  = GLFW_KEY_LEFT;
@@ -134,9 +161,97 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
     io.ClipboardUserData = this;
 }
 
+void eo::ImguiWindow::renderContents()
+{
+    glClearColor(1., 0., 0., 0.);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    ImGui::SetCurrentContext(mContext);
+    auto &io = ImGui::GetIO();
+
+    const auto display_size = getFramebufferSize();
+    io.DisplaySize.x        = display_size.x;
+    io.DisplaySize.y        = display_size.y;
+    io.DeltaTime            = getTime() - mLastFrame;
+
+    // TODO Might be wanky either: glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+    // or use the callbacks
+    io.MouseDown[0] = glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    io.MouseDown[1] = glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    io.MouseDown[2] = glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+
+    ImGui::NewFrame();
+    renderImguiContents();
+    ImGui::EndFrame();
+    ImGui::Render();
+
+    auto       draw_data  = ImGui::GetDrawData();
+    const auto projection = math::ortho(0.f, display_size.x, display_size.y, 0.f, 1.f, -1.f);
+
+    draw_data->ScaleClipRects(io.DisplayFramebufferScale);
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_SCISSOR_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glUseProgram(mShaderProgram);
+    glUniformMatrix4fv(glGetUniformLocation(mShaderProgram, "projection"), 1, GL_FALSE, &projection[0][0]);
+    glUniform1i(glGetUniformLocation(mShaderProgram, "tex"), 0);
+    glBindSampler(0, 0);
+    glBindTexture(GL_TEXTURE_2D, mFontTexture);
+
+    glBindVertexArray(mVao);
+    glBindBuffer(GL_ARRAY_BUFFER, mVbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
+
+    GLCHECK
+
+    for (int n = 0; n < draw_data->CmdListsCount; n++) {
+        const ImDrawList *cmd_list          = draw_data->CmdLists[n];
+        const ImDrawIdx * idx_buffer_offset = nullptr;
+
+        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), (const GLvoid *)cmd_list->VtxBuffer.Data,
+                     GL_STREAM_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx),
+                     (const GLvoid *)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
+
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
+            const ImDrawCmd *pcmd = &cmd_list->CmdBuffer[cmd_i];
+            if (pcmd->UserCallback) {
+                pcmd->UserCallback(cmd_list, pcmd);
+            } else {
+                glScissor((int)pcmd->ClipRect.x, (int)(display_size.y - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x),
+                          (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
+                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT,
+                               idx_buffer_offset);
+            }
+            idx_buffer_offset += pcmd->ElemCount;
+        }
+    }
+
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+    glBindVertexArray(0);
+
+    GLCHECK
+
+    mLastFrame = getTime();
+}
+
 eo::ImguiWindow::~ImguiWindow()
 {
     if (mContext) {
         ImGui::DestroyContext(mContext);
     }
+}
+
+void eo::ImguiWindow::renderImguiContents()
+{
+    ImGui::Begin("Hall welt");
+    ImGui::Text("Hallo was geht denn heute so bei euch?");
+    ImGui::End();
 }

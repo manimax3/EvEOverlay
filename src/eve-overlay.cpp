@@ -1,9 +1,9 @@
-#include "gfx/displaywindow.h"
+#include "gfx/imguiwindow.h"
 #include <iostream>
 
 int main()
 {
-	eo::DisplayWindow window(200, 200, "Test", 0, 0);
+	eo::ImguiWindow window(200, 200, "Test", 0, 0);
 
 	while(!window.shouldWindowClose()) {
 		window.pollEvents();
