@@ -4,10 +4,10 @@
 int main()
 {
 	eo::DisplayWindow window(200, 200, "Test", 0, 0);
-	eo::DisplayWindow window1(200, 200, "hbasjhdj", 0, 0);
-	eo::DisplayWindow window2(200, 200, "Test43", 0, 0);
 
-	std::cin.get();
-
+	while(!window.shouldWindowClose()) {
+		window.pollEvents();
+		window.frame();
+	}
 	return 0;
 }

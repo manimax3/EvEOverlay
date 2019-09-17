@@ -15,10 +15,17 @@ namespace eo {
 
 class DisplayWindow {
 public:
+    static void pollEvents();
+
+public:
     explicit DisplayWindow(int width, int height, std::string name, int posx, int posy);
     ~DisplayWindow();
 
+    bool shouldWindowClose() const;
+
+    void frame();
+
 private:
-	GLFWwindow *mWindow = nullptr;
+    GLFWwindow *mWindow = nullptr;
 };
 }

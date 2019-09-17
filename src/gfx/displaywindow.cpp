@@ -29,6 +29,8 @@ void terminateGlfw()
 }
 }
 
+void eo::DisplayWindow::pollEvents() { glfwPollEvents(); }
+
 eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int posx, int posy)
 {
 
@@ -51,6 +53,16 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
 
     glfwMakeContextCurrent(mWindow);
     gladLoadGLLoader((GLADloadproc)(glfwGetProcAddress));
+}
+
+bool eo::DisplayWindow::shouldWindowClose() const { return glfwWindowShouldClose(mWindow); }
+
+void eo::DisplayWindow::frame()
+{
+    glfwMakeContextCurrent(mWindow);
+    glClearColor(0.0, .0, .0, 0.001);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glfwSwapBuffers(mWindow);
 }
 
 eo::DisplayWindow::~DisplayWindow()
