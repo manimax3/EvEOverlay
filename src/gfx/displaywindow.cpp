@@ -51,6 +51,25 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
         return;
     }
 
+    glfwSetWindowUserPointer(mWindow, this);
+
+    glfwSetKeyCallback(mWindow, [](auto *window, auto... args) {
+        static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->keyboardInput(args...);
+    });
+    glfwSetCharCallback(mWindow, [](auto *window, auto... args) {
+        static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->characterInput(args...);
+    });
+    glfwSetCursorPosCallback(
+        mWindow, [](auto *window, auto... args) { static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->cursorInput(args...); });
+    glfwSetCursorEnterCallback(mWindow, [](auto *window, auto... args) {
+        static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->cursorenterInput(args...);
+    });
+    glfwSetMouseButtonCallback(mWindow, [](auto *window, auto... args) {
+        static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->mousebuttonInput(args...);
+    });
+    glfwSetScrollCallback(
+        mWindow, [](auto *window, auto... args) { static_cast<DisplayWindow *>(glfwGetWindowUserPointer(window))->scrollInput(args...); });
+
     glfwMakeContextCurrent(mWindow);
     gladLoadGLLoader((GLADloadproc)(glfwGetProcAddress));
 }
@@ -65,9 +84,12 @@ void eo::DisplayWindow::frame()
     glfwSwapBuffers(mWindow);
 }
 
+void eo::DisplayWindow::keyboardInput(int key, int scancode, int action, int mods) {}
+
 eo::DisplayWindow::~DisplayWindow()
 {
     if (mWindow) {
+        glfwSetWindowUserPointer(mWindow, nullptr);
         glfwDestroyWindow(mWindow);
     }
     terminateGlfw();

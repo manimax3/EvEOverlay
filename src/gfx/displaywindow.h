@@ -26,6 +26,13 @@ public:
     void frame();
 
 private:
+	void keyboardInput(int key, int scancode, int action, int mods);
+	void characterInput(unsigned int codepoint){}
+	void cursorInput(double xpos, double ypos){}
+	void cursorenterInput(int entered){}
+	void mousebuttonInput(int button, int action, int mods){}
+	void scrollInput(double xoffset, double yoffset){}
+
     GLFWwindow *mWindow = nullptr;
 };
 }
