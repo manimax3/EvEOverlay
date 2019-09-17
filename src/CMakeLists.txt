@@ -1,7 +1,7 @@
 # Library
 find_package(glfw3 3.3 REQUIRED)
 
-add_library(eveoverlay STATIC lib.cpp)
+add_library(eveoverlay STATIC gfx/displaywindow.cpp)
 
 target_link_libraries(eveoverlay PUBLIC Imgui Glad Spdlog glfw)
 
