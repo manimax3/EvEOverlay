@@ -33,6 +33,7 @@ void eo::DisplayWindow::pollEvents() { glfwPollEvents(); }
 
 eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int posx, int posy)
 {
+	log::info("Creating a new window {0}", name);
 
     if (!initGlfw()) {
         log::error("Could not initialize glfw!");
@@ -79,12 +80,14 @@ bool eo::DisplayWindow::shouldWindowClose() const { return glfwWindowShouldClose
 void eo::DisplayWindow::frame()
 {
     glfwMakeContextCurrent(mWindow);
-    glClearColor(0.0, .0, .0, 0.001);
-    glClear(GL_COLOR_BUFFER_BIT);
+	renderContents();
     glfwSwapBuffers(mWindow);
 }
 
-void eo::DisplayWindow::keyboardInput(int key, int scancode, int action, int mods) {}
+void eo::DisplayWindow::renderContents() {
+	glClearColor(1., .0, .0, .25);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
 
 eo::DisplayWindow::~DisplayWindow()
 {
