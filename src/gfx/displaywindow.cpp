@@ -113,7 +113,6 @@ eo::DisplayWindow::~DisplayWindow()
         glfwSetWindowUserPointer(mWindow, nullptr);
         glfwDestroyWindow(mWindow);
     }
-    terminateGlfw();
 }
 
 void eo::DisplayWindow::setClipboard(const char *content) { glfwSetClipboardString(mWindow, content); }

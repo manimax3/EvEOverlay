@@ -123,6 +123,9 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
         glAttachShader(mShaderProgram, vertexShader);
         glAttachShader(mShaderProgram, fragmentShader);
         glLinkProgram(mShaderProgram);
+
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
     }
     GLCHECK
 
@@ -284,9 +287,19 @@ void eo::ImguiWindow::scrollInput(double xoffset, double yoffset)
 
 eo::ImguiWindow::~ImguiWindow()
 {
+	ImGui::SetCurrentContext(mContext);
     if (mContext) {
         ImGui::DestroyContext(mContext);
     }
+
+	glfwMakeContextCurrent(mWindow);
+    glDeleteTextures(1, &mFontTexture);
+    glDeleteBuffers(1, &mVbo);
+    glDeleteBuffers(1, &mIbo);
+    glDeleteVertexArrays(1, &mVao);
+	glDeleteProgram(mShaderProgram);
+
+	GLCHECK
 }
 
 void eo::ImguiWindow::renderImguiContents()
