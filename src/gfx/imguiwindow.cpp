@@ -242,6 +242,46 @@ void eo::ImguiWindow::renderContents()
     mLastFrame = getTime();
 }
 
+void eo::ImguiWindow::keyboardInput(int key, int scancode, int action, int mods)
+{
+    ImGui::SetCurrentContext(mContext);
+    auto &io = ImGui::GetIO();
+    if (action == GLFW_PRESS) {
+        io.KeysDown[key] = true;
+    } else if (action == GLFW_RELEASE) {
+        io.KeysDown[key] = false;
+    }
+
+    io.KeyAlt   = mods & GLFW_MOD_ALT;
+    io.KeyCtrl  = mods & GLFW_MOD_CONTROL;
+    io.KeyShift = mods & GLFW_MOD_SHIFT;
+    io.KeySuper = mods & GLFW_MOD_SUPER;
+}
+
+void eo::ImguiWindow::characterInput(uint codepoint)
+{
+    ImGui::SetCurrentContext(mContext);
+    auto &io = ImGui::GetIO();
+    if (codepoint > 0 && codepoint < 0x10000) {
+        io.AddInputCharacter(static_cast<unsigned short>(codepoint));
+    }
+}
+
+void eo::ImguiWindow::cursorInput(double xpos, double ypos)
+{
+    ImGui::SetCurrentContext(mContext);
+    auto &io    = ImGui::GetIO();
+    io.MousePos = { static_cast<float>(xpos), static_cast<float>(ypos) };
+}
+
+void eo::ImguiWindow::scrollInput(double xoffset, double yoffset)
+{
+    ImGui::SetCurrentContext(mContext);
+    auto &io = ImGui::GetIO();
+    io.MouseWheel += static_cast<float>(xoffset);
+    io.MouseWheelH += static_cast<float>(yoffset);
+}
+
 eo::ImguiWindow::~ImguiWindow()
 {
     if (mContext) {

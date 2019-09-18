@@ -12,6 +12,11 @@ public:
 protected:
     void         renderContents() override;
     virtual void renderImguiContents();
+	
+    void keyboardInput(int key, int scancode, int action, int mods) override;
+    void characterInput(unsigned int codepoint) override;
+    void cursorInput(double xpos, double ypos) override;
+    void scrollInput(double xoffset, double yoffset) override;
 
 private:
     ImGuiContext *mContext = nullptr;
