@@ -6,7 +6,7 @@ add_library(eveoverlay STATIC
 	gfx/displaywindow.cpp
 	gfx/imguiwindow.cpp)
 
-target_link_libraries(eveoverlay PUBLIC Imgui Glad Spdlog glfw glm)
+target_link_libraries(eveoverlay PUBLIC Imgui Glad Spdlog glfw glm IconFontCppHeaders)
 
 # Executable for running the application
 add_executable(eve-overlay eve-overlay.cpp)
