@@ -124,8 +124,8 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
         glAttachShader(mShaderProgram, fragmentShader);
         glLinkProgram(mShaderProgram);
 
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
     }
     GLCHECK
 
@@ -166,7 +166,7 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
 
 void eo::ImguiWindow::renderContents()
 {
-    glClearColor(1., 0., 0., 0.);
+    glClearColor(0., 0., 0., 0.);
     glClear(GL_COLOR_BUFFER_BIT);
 
     ImGui::SetCurrentContext(mContext);
@@ -247,6 +247,12 @@ void eo::ImguiWindow::renderContents()
 
 void eo::ImguiWindow::keyboardInput(int key, int scancode, int action, int mods)
 {
+    if (mods & GLFW_MOD_CONTROL && key == GLFW_KEY_B && action == GLFW_PRESS) {
+        // FIXME Doesnt work see: https://github.com/glfw/glfw/issues/1566
+        glfwSetWindowAttrib(mWindow, GLFW_DECORATED, glfwGetWindowAttrib(mWindow, GLFW_DECORATED) == GLFW_TRUE ? GLFW_FALSE : GLFW_TRUE);
+        return;
+    }
+
     ImGui::SetCurrentContext(mContext);
     auto &io = ImGui::GetIO();
     if (action == GLFW_PRESS) {
@@ -287,24 +293,28 @@ void eo::ImguiWindow::scrollInput(double xoffset, double yoffset)
 
 eo::ImguiWindow::~ImguiWindow()
 {
-	ImGui::SetCurrentContext(mContext);
+    ImGui::SetCurrentContext(mContext);
     if (mContext) {
         ImGui::DestroyContext(mContext);
     }
 
-	glfwMakeContextCurrent(mWindow);
+    glfwMakeContextCurrent(mWindow);
     glDeleteTextures(1, &mFontTexture);
     glDeleteBuffers(1, &mVbo);
     glDeleteBuffers(1, &mIbo);
     glDeleteVertexArrays(1, &mVao);
-	glDeleteProgram(mShaderProgram);
+    glDeleteProgram(mShaderProgram);
 
-	GLCHECK
+    GLCHECK
 }
 
 void eo::ImguiWindow::renderImguiContents()
 {
-    ImGui::Begin("Hall welt");
+    const auto display_size = getFramebufferSize();
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y));
+    ImGui::SetNextWindowPos({ 0.f, 0.f });
+    ImGui::Begin("Hall welt", NULL, ImGuiWindowFlags_NoDecoration);
+    ImGui::SetWindowFontScale(2);
     ImGui::Text("Hallo was geht denn heute so bei euch?");
     ImGui::End();
 }

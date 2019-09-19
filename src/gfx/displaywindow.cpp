@@ -44,6 +44,8 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GL_TRUE);
+	glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
     mWindow = glfwCreateWindow(width, height, name.c_str(), NULL, NULL);
 
