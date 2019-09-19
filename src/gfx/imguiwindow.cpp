@@ -3,11 +3,14 @@
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+#include "IconsForkAwesome.h"
 #include "glad/glad.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "imgui.h"
 
 namespace {
+constexpr float font_size = 32.f;
+
 const char *vertex_shader = R"glsl(
 #version 330 core
 layout(location = 0) in vec2 Position;
@@ -65,6 +68,16 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
     ImGui::SetCurrentContext(mContext);
     ImGui::StyleColorsDark();
     auto &io = ImGui::GetIO();
+
+    assert(io.Fonts->AddFontFromFileTTF("assets/NotoMono-Regular.ttf", font_size));
+
+    const ImWchar icons_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
+    ImFontConfig  icons_config;
+    icons_config.PixelSnapH = true;
+    icons_config.MergeMode  = true;
+    assert(io.Fonts->AddFontFromFileTTF("assets/" FONT_ICON_FILE_NAME_FK, font_size, &icons_config, icons_ranges));
+
+    io.Fonts->Build();
 
     const auto display_size    = getFramebufferSize();
     io.DisplaySize.x           = display_size.x;
@@ -287,8 +300,8 @@ void eo::ImguiWindow::scrollInput(double xoffset, double yoffset)
 {
     ImGui::SetCurrentContext(mContext);
     auto &io = ImGui::GetIO();
-    io.MouseWheel += static_cast<float>(xoffset);
-    io.MouseWheelH += static_cast<float>(yoffset);
+    io.MouseWheelH += static_cast<float>(xoffset);
+    io.MouseWheel += static_cast<float>(yoffset);
 }
 
 eo::ImguiWindow::~ImguiWindow()
@@ -313,8 +326,11 @@ void eo::ImguiWindow::renderImguiContents()
     const auto display_size = getFramebufferSize();
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y));
     ImGui::SetNextWindowPos({ 0.f, 0.f });
-    ImGui::Begin("Hall welt", NULL, ImGuiWindowFlags_NoDecoration);
-    ImGui::SetWindowFontScale(2);
-    ImGui::Text("Hallo was geht denn heute so bei euch?");
+    ImGui::Begin("Hall welt", NULL, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar);
+    for (int i = 0; i < 50; i++) {
+        ImGui::Button("Drueck mich");
+        ImGui::SameLine();
+        ImGui::Text("%s", fmt::format("Hallo {0} Was geht", ICON_FK_BICYCLE).c_str());
+    }
     ImGui::End();
 }
