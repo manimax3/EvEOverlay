@@ -1,7 +1,7 @@
 # Library
 find_package(glfw3 3.3 REQUIRED)
 find_package(glm REQUIRED)
-find_package(Boost 1.66.0 REQUIRED)
+find_package(Boost 1.70.0 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
