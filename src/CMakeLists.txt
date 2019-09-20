@@ -9,7 +9,8 @@ add_library(eveoverlay STATIC
 	gfx/displaywindow.cpp
 	gfx/imguiwindow.cpp
 	requests.cpp
-	base64.cpp)
+	base64.cpp
+	authentication.cpp)
 
 target_link_libraries(eveoverlay PUBLIC 
 	Imgui 
