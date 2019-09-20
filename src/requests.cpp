@@ -61,3 +61,22 @@ std::string eo::urlencode(const std::string &input)
 
     return result.str();
 }
+
+std::string eo::base64_safe(const std::string &base64)
+{
+    std::ostringstream out;
+
+    for (char c : base64) {
+        if (c == '+') {
+            out << '-';
+        } else if (c == '/') {
+            out << '_';
+        } else if (c == '=') {
+            continue;
+        } else {
+            out << c;
+        }
+    }
+
+    return out.str();
+}
