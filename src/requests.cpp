@@ -9,7 +9,11 @@
 #include <boost/beast/version.hpp>
 
 // TODO Does not work on windows
-void eo::open_url_browser(const std::string &url) { system(("xdg-open " + url).c_str()); }
+void eo::open_url_browser(const std::string &url)
+{
+    system(("xdg-open '" + url + "'").c_str());
+    std::cout << std::endl; // Just because system() is so weird
+}
 
 void eo::test_get()
 {

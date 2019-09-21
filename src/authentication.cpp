@@ -32,7 +32,7 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
 {
 
     std::ostringstream out;
-    out << "https://" << eve_baseurl << "v2/oauth/authorize/?response_type=code"
+    out << "https://" << eve_baseurl << "/v2/oauth/authorize/?response_type=code"
         << "&redirect_uri=" << urlencode(std::string(redirect_url)) << "&client_id=" << client_id;
 
     const auto space = urlencode(" ");
@@ -40,6 +40,7 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
     std::string last{};
     bool        foundone = false;
     if (scopes.size() > 0) {
+        out << "&scopes=";
         last = scopes.back();
         scopes.pop_back();
         foundone = true;
@@ -63,10 +64,9 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
 
     out << "&state=somethingunique";
 
-	const auto url = out.str();
+    const auto url = out.str();
     log::info(url);
-	open_url_browser(url);
-
+    open_url_browser(url);
 
     return code_challenge;
 }
