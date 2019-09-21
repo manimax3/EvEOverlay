@@ -14,7 +14,10 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 
+#include <nlohmann/json.hpp>
 #include <openssl/sha.h>
+
+using json = nlohmann::json;
 
 namespace {
 std::string random_string(int n)
@@ -161,10 +164,10 @@ std::tuple<std::string, int, std::string, std::string> eo::make_token_request(co
     http::write(stream, req);
     beast::flat_buffer buffer;
 
-    http::response<http::dynamic_body> res;
+    http::response<http::string_body> res;
     http::read(stream, buffer, res);
 
-    std::cout << res << '\n';
+    auto j = json::parse(res.body());
 
-    return {};
+    return { j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
 }
