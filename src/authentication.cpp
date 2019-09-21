@@ -4,9 +4,15 @@
 #include "requests.h"
 
 #include <array>
+#include <iostream>
 #include <random>
 #include <sstream>
 #include <string>
+
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/ssl.hpp>
+#include <boost/beast/version.hpp>
 
 #include <openssl/sha.h>
 
@@ -65,8 +71,55 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
     out << "&state=somethingunique";
 
     const auto url = out.str();
-    log::info(url);
+    log::info("Making authorization request to: {0}", url);
     open_url_browser(url);
 
     return code_challenge;
+}
+
+std::string eo::handle_redirect()
+{
+    namespace beast = boost::beast;
+    namespace http  = beast::http;
+    namespace net   = boost::asio;
+    namespace ssl   = net::ssl;
+    using tcp       = net::ip::tcp;
+
+    const auto address = net::ip::make_address("0.0.0.0");
+
+    net::io_context ioc;
+    tcp::acceptor   acceptor{ ioc, { address, 8080 } };
+    tcp::socket     socket{ ioc };
+    acceptor.accept(socket);
+
+    beast::flat_buffer               buffer;
+    http::request<http::string_body> req;
+    http::read(socket, buffer, req);
+
+    http::response<http::string_body> resp{ std::piecewise_construct };
+    resp.body() = "<html><body>You can close this now.</body></html>";
+    resp.set(http::field::content_type, "text/html");
+    resp.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    http::write(socket, resp);
+
+    const auto &   target   = std::string{ req.target() };
+    constexpr auto code_str = std::string_view("code=");
+
+    const auto code_pos = target.find(code_str);
+    if (code_pos == target.npos) {
+        // TODO error
+        log::error("Redirect did not contain a code parameter");
+        return "error";
+    }
+
+    std::string code;
+    for (int i = 0; code_pos + code_str.length() - 1 + i != target.length() - 1; i++) {
+        if (target[code_pos + code_str.length() + i] == '&') {
+            break;
+        }
+
+        code += target[code_pos + code_str.length() + i];
+    }
+
+    return code;
 }

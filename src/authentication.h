@@ -10,4 +10,5 @@ constexpr std::string_view redirect_url = "http://localhost/callback/";
 constexpr std::string_view eve_baseurl  = "login.eveonline.com";
 
 std::string make_authorize_request(std::list<std::string> scopes);
+std::string handle_redirect();
 }
