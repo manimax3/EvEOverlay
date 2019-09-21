@@ -1,6 +1,7 @@
 #include "authentication.h"
 #include "base64.h"
 #include "gfx/imguiwindow.h"
+#include "logging.h"
 #include "requests.h"
 #include <iostream>
 
@@ -27,7 +28,10 @@ int main()
     /* 	window2.frame(); */
     /* } */
 
-    eo::make_authorize_request({ "esi-characters.read_blueprints.v1" });
+    const auto code_challenge = eo::make_authorize_request({ "esi-characters.read_blueprints.v1" });
+    const auto auth_code      = eo::handle_redirect();
+    eo::make_token_request(auth_code, code_challenge);
+    /* eo::log::info("{0}", eo::handle_redirect()); */
 
     return 0;
 }

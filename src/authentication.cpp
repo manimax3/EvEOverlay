@@ -67,6 +67,7 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
     SHA256((byte *)code_challenge.data(), code_challenge.length(), sha_output.data());
 
     out << "&code_challenge=" << base64_safe(base64_encode(sha_output.data(), 32));
+    out << "&code_challenge_method=S256";
 
     out << "&state=somethingunique";
 
@@ -122,4 +123,48 @@ std::string eo::handle_redirect()
     }
 
     return code;
+}
+
+std::tuple<std::string, int, std::string, std::string> eo::make_token_request(const std::string &auth_code,
+                                                                              const std::string &code_challenge)
+{
+    namespace beast = boost::beast;
+    namespace http  = beast::http;
+    namespace net   = boost::asio;
+    namespace ssl   = net::ssl;
+    using tcp       = net::ip::tcp;
+
+    net::io_context ioc;
+
+    ssl::context ctx(ssl::context::tlsv12_client);
+    ctx.set_default_verify_paths();
+
+    tcp::resolver                        resolver(ioc);
+    beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
+
+    const auto results = resolver.resolve(eve_baseurl, "443");
+    beast::get_lowest_layer(stream).connect(results);
+
+    stream.handshake(ssl::stream_base::client);
+
+    http::request<http::string_body> req{ http::verb::post, "/v2/oauth/token", 11 };
+    req.set(http::field::host, eve_baseurl);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::content_type, "application/x-www-form-urlencoded");
+
+    const auto body = fmt::format("grant_type=authorization_code&code={0}&client_id={1}&code_verifier={2}", auth_code,
+                                  std::string(client_id), code_challenge);
+
+    req.content_length(body.length());
+    req.body() = body;
+
+    http::write(stream, req);
+    beast::flat_buffer buffer;
+
+    http::response<http::dynamic_body> res;
+    http::read(stream, buffer, res);
+
+    std::cout << res << '\n';
+
+    return {};
 }
