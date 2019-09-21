@@ -4,6 +4,7 @@ find_package(glm REQUIRED)
 find_package(Boost 1.70.0 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(nlohmann_json 3.1.2 REQUIRED)
 
 add_library(eveoverlay STATIC 
 	gfx/displaywindow.cpp
@@ -21,7 +22,8 @@ target_link_libraries(eveoverlay PUBLIC
 	IconFontCppHeaders
 	Boost::boost
 	Threads::Threads
-	OpenSSL::SSL OpenSSL::Crypto)
+	OpenSSL::SSL OpenSSL::Crypto
+	nlohmann_json::nlohmann_json)
 
 # Executable for running the application
 add_executable(eve-overlay eve-overlay.cpp)
