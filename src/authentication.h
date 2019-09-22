@@ -17,10 +17,20 @@ struct TokenRequestResult {
     std::string refresh_token;
 };
 
+struct VerifyTokenRequestResult {
+    int32       characterID;
+    std::string characterName;
+    std::string characterOwnerHash;
+    std::string expiresOn;
+    std::string intellectualProperty;
+    std::string tokenType;
+};
+
 using AuthenticationCode = std::string;
 using CodeChallenge      = std::string;
 
-CodeChallenge      make_authorize_request(std::list<std::string> scopes);
-AuthenticationCode handle_redirect();
-TokenRequestResult make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge);
+CodeChallenge            make_authorize_request(std::list<std::string> scopes);
+AuthenticationCode       handle_redirect();
+TokenRequestResult       make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge);
+VerifyTokenRequestResult verify_token(const AuthenticationCode &auth_code);
 }

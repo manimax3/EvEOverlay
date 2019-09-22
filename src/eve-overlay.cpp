@@ -30,8 +30,15 @@ int main()
 
     const auto code_challenge = eo::make_authorize_request({ "esi-characters.read_blueprints.v1" });
     const auto auth_code      = eo::handle_redirect();
-    eo::make_token_request(auth_code, code_challenge);
-    /* eo::log::info("{0}", eo::handle_redirect()); */
+    const auto tokenrequest   = eo::make_token_request(auth_code, code_challenge);
+    eo::verify_token(tokenrequest.access_token);
+
+    // We need to store this somewhere
+    // Verify request also get the expiration date
+    // store the character
+    //
+    // a way to retrieve the token
+    // refresh the token if needed
 
     return 0;
 }

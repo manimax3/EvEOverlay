@@ -17,7 +17,12 @@
 #include <nlohmann/json.hpp>
 #include <openssl/sha.h>
 
-using json = nlohmann::json;
+using json      = nlohmann::json;
+namespace beast = boost::beast;
+namespace http  = beast::http;
+namespace net   = boost::asio;
+namespace ssl   = net::ssl;
+using tcp       = net::ip::tcp;
 
 namespace {
 std::string random_string(int n)
@@ -35,6 +40,13 @@ std::string random_string(int n)
 
     return out;
 }
+
+auto &get_io_context()
+{
+    static net::io_context context;
+    return context;
+}
+
 }
 
 std::string eo::make_authorize_request(std::list<std::string> scopes)
@@ -83,17 +95,12 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
 
 std::string eo::handle_redirect()
 {
-    namespace beast = boost::beast;
-    namespace http  = beast::http;
-    namespace net   = boost::asio;
-    namespace ssl   = net::ssl;
-    using tcp       = net::ip::tcp;
 
     const auto address = net::ip::make_address("0.0.0.0");
 
-    net::io_context ioc;
-    tcp::acceptor   acceptor{ ioc, { address, 8080 } };
-    tcp::socket     socket{ ioc };
+    auto &        ioc = get_io_context();
+    tcp::acceptor acceptor{ ioc, { address, 8080 } };
+    tcp::socket   socket{ ioc };
     acceptor.accept(socket);
 
     beast::flat_buffer               buffer;
@@ -130,13 +137,7 @@ std::string eo::handle_redirect()
 
 eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge)
 {
-    namespace beast = boost::beast;
-    namespace http  = beast::http;
-    namespace net   = boost::asio;
-    namespace ssl   = net::ssl;
-    using tcp       = net::ip::tcp;
-
-    net::io_context ioc;
+    auto &ioc = get_io_context();
 
     ssl::context ctx(ssl::context::tlsv12_client);
     ctx.set_default_verify_paths();
@@ -166,7 +167,40 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
     http::response<http::string_body> res;
     http::read(stream, buffer, res);
 
+    log::info(res.body());
     auto j = json::parse(res.body());
 
     return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
+}
+
+eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_code)
+{
+    auto &ioc = get_io_context();
+
+    ssl::context ctx(ssl::context::tlsv12_client);
+    ctx.set_default_verify_paths();
+
+    tcp::resolver                        resolver(ioc);
+    beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
+
+    const auto results = resolver.resolve("esi.evetech.net", "443");
+    beast::get_lowest_layer(stream).connect(results);
+
+    stream.handshake(ssl::stream_base::client);
+
+    http::request<http::string_body> req{ http::verb::get, "/verify/", 11 };
+    req.set(http::field::host, "esi.evetech.net");
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set("X-User-Agent", client_id);
+    req.set(http::field::authorization, fmt::format("Bearer {0}", auth_code));
+    req.set(http::field::accept, "application/json");
+
+    http::write(stream, req);
+    beast::flat_buffer buffer;
+
+    http::response<http::string_body> res;
+    http::read(stream, buffer, res);
+
+    std::cout << res << '\n';
+    return {};
 }
