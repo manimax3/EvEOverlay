@@ -128,8 +128,7 @@ std::string eo::handle_redirect()
     return code;
 }
 
-std::tuple<std::string, int, std::string, std::string> eo::make_token_request(const std::string &auth_code,
-                                                                              const std::string &code_challenge)
+eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge)
 {
     namespace beast = boost::beast;
     namespace http  = beast::http;
@@ -169,5 +168,5 @@ std::tuple<std::string, int, std::string, std::string> eo::make_token_request(co
 
     auto j = json::parse(res.body());
 
-    return { j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
+    return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
 }
