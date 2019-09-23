@@ -141,6 +141,23 @@ eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_cod
     return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], j["TokenType"] };
 }
 
+void eo::refresh_token(TokenData &token)
+{
+    HttpRequest request;
+    request.hostname                           = eve_baseurl;
+    request.target                             = "/v2/oauth/token";
+    request.headers[http::field::content_type] = "x-www-form-urlencoded";
+    request.body = fmt::format("grant_type=refresh_token&refresh_token={0}&client_id={1}", token.refreshToken, client_id);
+
+    const auto response = makeHttpRequest(request);
+    const json j        = json::parse(response.body);
+    j.at("access_token").get_to(token.accessToken);
+    j.at("refresh_token").get_to(token.refreshToken);
+
+    const auto verifyresult = verify_token(token.accessToken);
+    token.expiresOn         = verifyresult.expiresOn;
+}
+
 eo::TokenData eo::load_token_data()
 {
     json          j;
