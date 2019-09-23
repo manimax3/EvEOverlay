@@ -25,7 +25,7 @@ struct HttpResponse {
 struct HttpRequest {
     enum Type { GET, POST };
     std::string hostname;
-    Type        requestType;
+    Type        requestType = GET;
     std::string target;
     FieldMap    headers;
     std::string body = {};

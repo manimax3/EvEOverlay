@@ -88,7 +88,8 @@ eo::HttpResponse eo::makeHttpRequest(const HttpRequest &request)
         const auto makevisitor
             = [&httprequest](const auto &value) { return [&value, &httprequest](const auto &header) { httprequest.set(header, value); }; };
 
-		httprequest.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        httprequest.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        httprequest.set(http::field::host, request.hostname);
 
         for (auto &[field, value] : request.headers) {
             const auto visitor = makevisitor(value);

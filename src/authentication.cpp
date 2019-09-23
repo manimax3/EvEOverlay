@@ -126,7 +126,6 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
     request.port                               = "443";
     request.type                               = HttpRequest::POST;
     request.target                             = "/v2/oauth/token";
-    request.headers[http::field::host]         = eve_baseurl;
     request.headers[http::field::content_type] = "application/x-www-form-urlencoded";
     request.body = fmt::format("grant_type=authorization_code&code={0}&client_id={1}&code_verifier={2}", auth_code, std::string(client_id),
                                code_challenge);
@@ -141,33 +140,16 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
 
 eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_code)
 {
-    auto &ioc = get_io_context();
+    HttpRequest request;
+    request.hostname                            = "esi.evetech.net";
+    request.target                              = "/verify/";
+    request.headers["X-User-Agent"]             = client_id;
+    request.headers[http::field::authorization] = fmt::format("Bearer {0}", auth_code);
+    request.headers[http::field::accept]        = "application/json";
 
-    ssl::context ctx(ssl::context::tlsv12_client);
-    ctx.set_default_verify_paths();
+    const auto response = makeHttpRequest(request);
 
-    tcp::resolver                        resolver(ioc);
-    beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
-
-    const auto results = resolver.resolve("esi.evetech.net", "443");
-    beast::get_lowest_layer(stream).connect(results);
-
-    stream.handshake(ssl::stream_base::client);
-
-    http::request<http::string_body> req{ http::verb::get, "/verify/", 11 };
-    req.set(http::field::host, "esi.evetech.net");
-    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    req.set("X-User-Agent", client_id);
-    req.set(http::field::authorization, fmt::format("Bearer {0}", auth_code));
-    req.set(http::field::accept, "application/json");
-
-    http::write(stream, req);
-    beast::flat_buffer buffer;
-
-    http::response<http::string_body> res;
-    http::read(stream, buffer, res);
-
-    json j = json::parse(res.body());
+    json j = json::parse(respone.body);
     return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], j["TokenType"] };
 }
 
