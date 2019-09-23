@@ -4,6 +4,7 @@
 #include "requests.h"
 
 #include <array>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -202,5 +203,20 @@ eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_cod
     http::read(stream, buffer, res);
 
     json j = json::parse(res.body());
-    return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], "", j["TokenType"] };
+    return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], j["TokenType"] };
+}
+
+eo::TokenData eo::load_token_data()
+{
+    json          j;
+    std::ifstream ifs(settings_file_path);
+    ifs >> j;
+    return j.get<eo::TokenData>();
+}
+
+void eo::save_token_data(const eo::TokenData &data)
+{
+    std::ofstream ofs(settings_file_path);
+    json          j = data;
+    ofs << j;
 }

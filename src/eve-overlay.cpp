@@ -5,7 +5,10 @@
 #include "requests.h"
 #include <iostream>
 
+#include <nlohmann/json.hpp>
 #include <openssl/sha.h>
+
+using json = nlohmann::json;
 
 int main()
 {
@@ -33,6 +36,8 @@ int main()
     const auto tokenrequest   = eo::make_token_request(auth_code, code_challenge);
     const auto verifyresult   = eo::verify_token(tokenrequest.access_token);
     eo::log::info(verifyresult.characterName);
+
+    eo::save_token_data(eo::make_token_data(tokenrequest, verifyresult));
 
     // We need to store this somewhere
     // Verify request also get the expiration date
