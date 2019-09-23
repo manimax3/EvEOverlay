@@ -201,6 +201,6 @@ eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_cod
     http::response<http::string_body> res;
     http::read(stream, buffer, res);
 
-    std::cout << res << '\n';
-    return {};
+    json j = json::parse(res.body());
+    return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], "", j["TokenType"] };
 }
