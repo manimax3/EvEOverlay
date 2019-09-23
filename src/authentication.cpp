@@ -10,20 +10,10 @@
 #include <sstream>
 #include <string>
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/ssl.hpp>
-#include <boost/beast/version.hpp>
-
 #include <nlohmann/json.hpp>
 #include <openssl/sha.h>
 
-using json      = nlohmann::json;
-namespace beast = boost::beast;
-namespace http  = beast::http;
-namespace net   = boost::asio;
-namespace ssl   = net::ssl;
-using tcp       = net::ip::tcp;
+using json = nlohmann::json;
 
 namespace {
 std::string random_string(int n)
@@ -41,13 +31,6 @@ std::string random_string(int n)
 
     return out;
 }
-
-auto &get_io_context()
-{
-    static net::io_context context;
-    return context;
-}
-
 }
 
 std::string eo::make_authorize_request(std::list<std::string> scopes)
@@ -138,38 +121,20 @@ std::string eo::handle_redirect()
 
 eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge)
 {
-    auto &ioc = get_io_context();
+    eo::HttpRequest request;
+    request.hostname                           = eve_baseurl;
+    request.port                               = "443";
+    request.type                               = HttpRequest::POST;
+    request.target                             = "/v2/oauth/token";
+    request.headers[http::field::host]         = eve_baseurl;
+    request.headers[http::field::content_type] = "application/x-www-form-urlencoded";
+    request.body = fmt::format("grant_type=authorization_code&code={0}&client_id={1}&code_verifier={2}", auth_code, std::string(client_id),
+                               code_challenge);
 
-    ssl::context ctx(ssl::context::tlsv12_client);
-    ctx.set_default_verify_paths();
+    const auto response = makeHttpRequest(request);
 
-    tcp::resolver                        resolver(ioc);
-    beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
-
-    const auto results = resolver.resolve(eve_baseurl, "443");
-    beast::get_lowest_layer(stream).connect(results);
-
-    stream.handshake(ssl::stream_base::client);
-
-    http::request<http::string_body> req{ http::verb::post, "/v2/oauth/token", 11 };
-    req.set(http::field::host, eve_baseurl);
-    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    req.set(http::field::content_type, "application/x-www-form-urlencoded");
-
-    const auto body = fmt::format("grant_type=authorization_code&code={0}&client_id={1}&code_verifier={2}", auth_code,
-                                  std::string(client_id), code_challenge);
-
-    req.content_length(body.length());
-    req.body() = body;
-
-    http::write(stream, req);
-    beast::flat_buffer buffer;
-
-    http::response<http::string_body> res;
-    http::read(stream, buffer, res);
-
-    log::info(res.body());
-    auto j = json::parse(res.body());
+    log::info(response.body);
+    auto j = json::parse(response.body);
 
     return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
 }
