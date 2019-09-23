@@ -58,3 +58,4 @@ _deps
 
 build/
 .ccls-cache
+.clangd/
