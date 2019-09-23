@@ -7,46 +7,16 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
+#include <boost/predef/os/linux.h>
 
-// TODO Does not work on windows
 void eo::open_url_browser(const std::string &url)
 {
+#if BOOST_OS_LINUX
     system(("xdg-open '" + url + "'").c_str());
     std::cout << std::endl; // Just because system() is so weird
-}
-
-void eo::test_get()
-{
-    namespace beast = boost::beast;
-    namespace http  = beast::http;
-    namespace net   = boost::asio;
-    namespace ssl   = net::ssl;
-    using tcp       = net::ip::tcp;
-
-    net::io_context ioc;
-
-    ssl::context ctx(ssl::context::tlsv12_client);
-    ctx.set_default_verify_paths();
-
-    tcp::resolver                        resolver(ioc);
-    beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
-
-    const auto results = resolver.resolve("www.google.de", "443");
-    beast::get_lowest_layer(stream).connect(results);
-
-    stream.handshake(ssl::stream_base::client);
-
-    http::request<http::string_body> req{ http::verb::get, "/", 11 };
-    /* req.set(http::field::host, "www.google.de"); */
-    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-
-    http::write(stream, req);
-    beast::flat_buffer buffer;
-
-    http::response<http::dynamic_body> res;
-    http::read(stream, buffer, res);
-
-    std::cout << res << std::endl;
+#else
+	static_assert(false, "This OS is currently not supported");
+#endif
 }
 
 std::string eo::urlencode(const std::string &input)
