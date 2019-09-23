@@ -118,3 +118,42 @@ eo::HttpResponse eo::makeHttpRequest(const HttpRequest &request)
     return response;
 }
 
+eo::HttpRequest eo::expectHttpRequest(const HttpResponse &response, unsigned short port, const std::string &ip)
+{
+    const auto    address = net::ip::make_address(ip);
+    auto &        ioc     = get_io_context();
+    tcp::acceptor acceptor{ ioc, { address, port } };
+    tcp::socket   socket{ ioc };
+    acceptor.accept(socket);
+
+    beast::flat_buffer               buffer;
+    http::request<http::string_body> httprequest;
+    http::read(socket, buffer, httprequest);
+
+    http::response<http::string_body> httpresponse{ std::piecewise_construct };
+    httpresponse.body() = response.body;
+
+    const auto makevisitor
+        = [&httpresponse](const auto &value) { return [&value, &httpresponse](const auto &header) { httpresponse.set(header, value); }; };
+
+    httpresponse.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+    for (auto &[field, value] : response.headers) {
+        const auto visitor = makevisitor(value);
+        std::visit(visitor, field);
+    }
+
+    http::write(socket, httpresponse);
+
+    HttpRequest request;
+    request.target = std::string(httprequest.target());
+    request.body   = httprequest.body();
+    for (const auto &field : httprequest) {
+        FieldMap::key_type    key{ field.name() };
+        FieldMap::mapped_type value{ field.value() };
+        request.headers[key] = std::move(value);
+    }
+    // TODO Type, port, hostname
+    return request;
+}
+

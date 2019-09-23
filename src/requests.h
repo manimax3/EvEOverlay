@@ -1,4 +1,5 @@
 #pragma once
+#include "util.h"
 #include <map>
 #include <variant>
 
@@ -33,4 +34,5 @@ struct HttpRequest {
 };
 
 HttpResponse makeHttpRequest(const HttpRequest &request);
+HttpRequest  expectHttpRequest(const HttpResponse &response, unsigned short port = 8080, const std::string &ip = "0.0.0.0");
 }

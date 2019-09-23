@@ -79,25 +79,13 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
 
 std::string eo::handle_redirect()
 {
+    HttpResponse response;
+    response.body                               = "<html><body>You can close this now.</body></html>";
+    response.headers[http::field::content_type] = "text/html";
 
-    const auto address = net::ip::make_address("0.0.0.0");
+    const auto request = expectHttpRequest(response);
 
-    auto &        ioc = get_io_context();
-    tcp::acceptor acceptor{ ioc, { address, 8080 } };
-    tcp::socket   socket{ ioc };
-    acceptor.accept(socket);
-
-    beast::flat_buffer               buffer;
-    http::request<http::string_body> req;
-    http::read(socket, buffer, req);
-
-    http::response<http::string_body> resp{ std::piecewise_construct };
-    resp.body() = "<html><body>You can close this now.</body></html>";
-    resp.set(http::field::content_type, "text/html");
-    resp.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-    http::write(socket, resp);
-
-    const auto &   target   = std::string{ req.target() };
+    const auto &   target   = std::string{ request.target };
     constexpr auto code_str = std::string_view("code=");
 
     const auto code_pos = target.find(code_str);
@@ -124,7 +112,7 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
     eo::HttpRequest request;
     request.hostname                           = eve_baseurl;
     request.port                               = "443";
-    request.type                               = HttpRequest::POST;
+    request.requestType                        = HttpRequest::POST;
     request.target                             = "/v2/oauth/token";
     request.headers[http::field::content_type] = "application/x-www-form-urlencoded";
     request.body = fmt::format("grant_type=authorization_code&code={0}&client_id={1}&code_verifier={2}", auth_code, std::string(client_id),
@@ -149,7 +137,7 @@ eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_cod
 
     const auto response = makeHttpRequest(request);
 
-    json j = json::parse(respone.body);
+    json j = json::parse(response.body);
     return { j["CharacterID"], j["CharacterName"], j["CharacterOwnerHash"], j["ExpiresOn"], j["TokenType"] };
 }
 
