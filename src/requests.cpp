@@ -1,13 +1,11 @@
 #include "requests.h"
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
-#include <boost/predef/os/linux.h>
 
 namespace eo {
 namespace ssl = boost::asio::ssl;
@@ -23,9 +21,8 @@ auto &get_io_context()
 
 void eo::open_url_browser(const std::string &url)
 {
-#if BOOST_OS_LINUX
+#ifdef __linux__
     system(("xdg-open '" + url + "'").c_str());
-    std::cout << std::endl; // Just because system() is so weird
 #else
     static_assert(false, "This OS is currently not supported");
 #endif

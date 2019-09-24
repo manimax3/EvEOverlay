@@ -40,6 +40,7 @@ CodeChallenge            make_authorize_request(std::list<std::string> scopes);
 AuthenticationCode       handle_redirect();
 TokenRequestResult       make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge);
 VerifyTokenRequestResult verify_token(const AuthenticationCode &auth_code);
+void                     refresh_token(TokenData &token);
 
 inline TokenData make_token_data(const TokenRequestResult &rresult, const VerifyTokenRequestResult &vresult)
 {

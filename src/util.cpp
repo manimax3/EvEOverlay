@@ -1,16 +1,15 @@
 #include "util.h"
 #include <array>
-#include <boost/predef/os/linux.h>
 #include <cstring>
 
-#if BOOST_OS_LINUX
+#ifdef __linux__
 #include <sys/stat.h>
 #include <unistd.h>
 #endif
 
 std::string eo::get_cwd()
 {
-#if BOOST_OS_LINUX
+#ifdef __linux__
     std::array<char, 512> data;
     std::memset(data.data(), 0, 512);
     getcwd(data.data(), 512);
@@ -22,7 +21,7 @@ std::string eo::get_cwd()
 
 std::string eo::get_exe_dir()
 {
-#if BOOST_OS_LINUX
+#ifdef __linux__
     std::array<char, 512> data;
     std::memset(data.data(), 0, 512);
     readlink("/proc/self/exe", data.data(), 512);
