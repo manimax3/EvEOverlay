@@ -41,12 +41,12 @@ AuthenticationCode       handle_redirect();
 TokenRequestResult       make_token_request(const AuthenticationCode &auth_code, const CodeChallenge &code_challenge);
 VerifyTokenRequestResult verify_token(const AuthenticationCode &auth_code);
 void                     refresh_token(TokenData &token);
+bool                     token_expired(const TokenData &token);
 
 inline TokenData make_token_data(const TokenRequestResult &rresult, const VerifyTokenRequestResult &vresult)
 {
     return { rresult.refresh_token, vresult.characterName, vresult.characterID, rresult.access_token, vresult.expiresOn };
 }
-
 
 // Serialization
 

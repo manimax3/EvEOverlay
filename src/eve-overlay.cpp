@@ -38,16 +38,15 @@ int main()
     /* const auto verifyresult   = eo::verify_token(tokenrequest.access_token); */
     /* eo::log::info(verifyresult.characterName); */
 
-    /* eo::save_token_data(eo::make_token_data(tokenrequest, verifyresult)); */
-
     auto conn = eo::db::make_database_connection();
     /* eo::db::store_in_db(conn, eo::make_token_data(tokenrequest, verifyresult)); */
 
     try {
         auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
-        std::cout << json(tokendata) << std::endl;
+        eo::log::info("TokenData Dump:\n{0}", json(tokendata).dump(2));
+        eo::log::info("Token expired? {0}", eo::token_expired(tokendata));
     } catch (const std::runtime_error &e) {
-		eo::log::error("Couldnt find a token in the databse");
+        eo::log::error("Couldnt find a token in the databse");
     }
 
     // We need to store this somewhere

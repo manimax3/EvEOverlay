@@ -4,6 +4,7 @@
 #include "requests.h"
 
 #include <array>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -120,7 +121,6 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
 
     const auto response = makeHttpRequest(request);
 
-    log::info(response.body);
     auto j = json::parse(response.body);
 
     return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
@@ -156,4 +156,18 @@ void eo::refresh_token(TokenData &token)
 
     const auto verifyresult = verify_token(token.accessToken);
     token.expiresOn         = verifyresult.expiresOn;
+}
+
+bool eo::token_expired(const TokenData &token)
+{
+    const auto &expiresOn = token.expiresOn;
+    const auto  t         = std::time(nullptr);
+    const auto *utctm     = std::gmtime(&t);
+
+    std::array<char, 64> output = { 0 };
+
+    const auto       length = std::strftime(output.data(), output.size(), "%FT%TZ", utctm);
+    std::string_view timestring{ output.data(), length };
+
+    return expiresOn < timestring;
 }
