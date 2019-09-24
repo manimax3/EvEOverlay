@@ -13,7 +13,8 @@ add_library(eveoverlay STATIC
 	requests.cpp
 	base64.cpp
 	authentication.cpp
-	util.cpp)
+	util.cpp
+	db.cpp)
 
 target_link_libraries(eveoverlay PUBLIC 
 	Imgui Glad Spdlog glfw glm IconFontCppHeaders
