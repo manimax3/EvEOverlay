@@ -2,6 +2,7 @@
 #include <string>
 
 #include "../util.h"
+#include "../math.h"
 
 struct GLFWwindow;
 

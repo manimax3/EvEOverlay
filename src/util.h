@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <glm/glm.hpp>
 #include <string>
 #include <string_view>
 
@@ -11,8 +10,6 @@ using uint32 = std::uint32_t;
 using int8   = std::int8_t;
 using uint8  = std::uint8_t;
 using byte   = uint8;
-
-namespace math = glm;
 
 std::string get_cwd();
 std::string get_exe_dir();
