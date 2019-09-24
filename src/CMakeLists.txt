@@ -17,7 +17,7 @@ add_library(eveoverlay STATIC
 	db.cpp)
 
 target_link_libraries(eveoverlay PUBLIC 
-	Imgui Glad Spdlog glfw glm IconFontCppHeaders
+	Imgui Glad fmt glfw glm IconFontCppHeaders
 	Boost::boost Threads::Threads OpenSSL::SSL OpenSSL::Crypto
 	nlohmann_json::nlohmann_json SQLite::SQLite3)
 

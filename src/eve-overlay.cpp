@@ -47,7 +47,7 @@ int main()
         auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
         std::cout << json(tokendata) << std::endl;
     } catch (const std::runtime_error &e) {
-		std::cout << "Couldnt find a token in the databse\n";
+		eo::log::error("Couldnt find a token in the databse");
     }
 
     // We need to store this somewhere
