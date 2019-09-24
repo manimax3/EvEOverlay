@@ -95,9 +95,17 @@ void eo::db::store_in_db(SqliteSPtr dbconnection, const TokenData &data)
 
 eo::TokenData eo::db::get_latest_tokendata_by_expiredate(SqliteSPtr dbconnection)
 {
-    TokenData data;
-    auto      stmt = make_statement(std::move(dbconnection), "SELECT * FROM token ORDER BY expireson DESC LIMIT 1");
+    auto countstmt = make_statement(dbconnection, "SELECT COUNT(*) FROM token ORDER BY expireson DESC LIMIT 1");
+
+    sqlite3_step(countstmt.get());
+    if (sqlite3_column_int(countstmt.get(), 0) == 0) {
+        throw std::runtime_error("Could not find a token in the database");
+    }
+
+    auto stmt = make_statement(std::move(dbconnection), "SELECT * FROM token ORDER BY expireson DESC LIMIT 1");
     sqlite3_step(stmt.get());
+
+    TokenData data;
     data.refreshToken  = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 0));
     data.characterName = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 1));
     data.characterID   = sqlite3_column_int(stmt.get(), 2);

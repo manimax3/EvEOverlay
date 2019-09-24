@@ -32,19 +32,23 @@ int main()
     /* 	window2.frame(); */
     /* } */
 
-    const auto code_challenge = eo::make_authorize_request({ "esi-characters.read_blueprints.v1" });
-    const auto auth_code      = eo::handle_redirect();
-    const auto tokenrequest   = eo::make_token_request(auth_code, code_challenge);
-    const auto verifyresult   = eo::verify_token(tokenrequest.access_token);
-    eo::log::info(verifyresult.characterName);
+    /* const auto code_challenge = eo::make_authorize_request({ "esi-characters.read_blueprints.v1" }); */
+    /* const auto auth_code      = eo::handle_redirect(); */
+    /* const auto tokenrequest   = eo::make_token_request(auth_code, code_challenge); */
+    /* const auto verifyresult   = eo::verify_token(tokenrequest.access_token); */
+    /* eo::log::info(verifyresult.characterName); */
 
     /* eo::save_token_data(eo::make_token_data(tokenrequest, verifyresult)); */
 
     auto conn = eo::db::make_database_connection();
-    eo::db::store_in_db(conn, eo::make_token_data(tokenrequest, verifyresult));
+    /* eo::db::store_in_db(conn, eo::make_token_data(tokenrequest, verifyresult)); */
 
-    auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
-    std::cout << json(tokendata) << std::endl;
+    try {
+        auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
+        std::cout << json(tokendata) << std::endl;
+    } catch (const std::runtime_error &e) {
+		std::cout << "Couldnt find a token in the databse\n";
+    }
 
     // We need to store this somewhere
     // Verify request also get the expiration date
