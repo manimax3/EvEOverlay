@@ -157,18 +157,3 @@ void eo::refresh_token(TokenData &token)
     const auto verifyresult = verify_token(token.accessToken);
     token.expiresOn         = verifyresult.expiresOn;
 }
-
-eo::TokenData eo::load_token_data()
-{
-    json          j;
-    std::ifstream ifs(settings_file_path);
-    ifs >> j;
-    return j.get<eo::TokenData>();
-}
-
-void eo::save_token_data(const eo::TokenData &data)
-{
-    std::ofstream ofs(settings_file_path);
-    json          j = data;
-    ofs << j;
-}

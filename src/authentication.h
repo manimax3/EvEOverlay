@@ -47,8 +47,6 @@ inline TokenData make_token_data(const TokenRequestResult &rresult, const Verify
     return { rresult.refresh_token, vresult.characterName, vresult.characterID, rresult.access_token, vresult.expiresOn };
 }
 
-TokenData load_token_data();
-void      save_token_data(const TokenData &data);
 
 // Serialization
 

@@ -8,14 +8,25 @@ struct sqlite3;
 struct sqlite3_stmt;
 }
 
+namespace eo {
+struct TokenData;
+}
+
 namespace eo::db {
 
 constexpr const int CURRENT_VERSION = 1;
 
-std::shared_ptr<sqlite3> make_database_connection(const std::string &file = get_exe_dir() + data_folder + "data.db", bool migrate = true);
-std::shared_ptr<sqlite3_stmt> make_statement(std::shared_ptr<sqlite3> dbconnection, const std::string &stmt);
+using SqliteSPtr     = std::shared_ptr<sqlite3>;
+using SqliteStmtSPtr = std::shared_ptr<sqlite3_stmt>;
+
+SqliteSPtr     make_database_connection(const std::string &file = get_exe_dir() + data_folder + "data.db", bool migrate = true);
+SqliteStmtSPtr make_statement(SqliteSPtr dbconnection, const std::string &stmt);
 
 void migrate_tables(sqlite3 &dbconnection, int from, int to);
 int  get_pragma_version(sqlite3 &dbconnection);
 void set_pragma_version(sqlite3 &dbconnection, int value);
+
+// Store, Load and other helper functions
+void      store_in_db(SqliteSPtr dbconnection, const TokenData &data);
+TokenData get_latest_tokendata_by_expiredate(SqliteSPtr dbconnection);
 }

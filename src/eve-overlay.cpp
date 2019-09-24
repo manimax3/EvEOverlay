@@ -1,5 +1,6 @@
 #include "authentication.h"
 #include "base64.h"
+#include "db.h"
 #include "gfx/imguiwindow.h"
 #include "logging.h"
 #include "requests.h"
@@ -37,7 +38,13 @@ int main()
     const auto verifyresult   = eo::verify_token(tokenrequest.access_token);
     eo::log::info(verifyresult.characterName);
 
-    eo::save_token_data(eo::make_token_data(tokenrequest, verifyresult));
+    /* eo::save_token_data(eo::make_token_data(tokenrequest, verifyresult)); */
+
+    auto conn = eo::db::make_database_connection();
+    eo::db::store_in_db(conn, eo::make_token_data(tokenrequest, verifyresult));
+
+    auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
+    std::cout << json(tokendata) << std::endl;
 
     // We need to store this somewhere
     // Verify request also get the expiration date

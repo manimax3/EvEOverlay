@@ -1,4 +1,5 @@
 #include "db.h"
+#include "authentication.h"
 #include "logging.h"
 
 #include <sqlite3.h>
@@ -80,3 +81,29 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
 
     set_pragma_version(dbconnection, to);
 }
+
+void eo::db::store_in_db(SqliteSPtr dbconnection, const TokenData &data)
+{
+    auto stmt = make_statement(std::move(dbconnection), "INSERT INTO token VALUES(?,?,?,?,?)");
+    sqlite3_bind_text(stmt.get(), 1, data.refreshToken.c_str(), data.refreshToken.length(), nullptr);
+    sqlite3_bind_text(stmt.get(), 2, data.characterName.c_str(), data.characterName.length(), nullptr);
+    sqlite3_bind_int(stmt.get(), 3, data.characterID);
+    sqlite3_bind_text(stmt.get(), 4, data.accessToken.c_str(), data.accessToken.length(), nullptr);
+    sqlite3_bind_text(stmt.get(), 5, data.expiresOn.c_str(), data.expiresOn.length(), nullptr);
+    sqlite3_step(stmt.get());
+}
+
+eo::TokenData eo::db::get_latest_tokendata_by_expiredate(SqliteSPtr dbconnection)
+{
+    TokenData data;
+    auto      stmt = make_statement(std::move(dbconnection), "SELECT * FROM token ORDER BY expireson DESC LIMIT 1");
+    sqlite3_step(stmt.get());
+    data.refreshToken  = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 0));
+    data.characterName = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 1));
+    data.characterID   = sqlite3_column_int(stmt.get(), 2);
+    data.accessToken   = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 3));
+    data.expiresOn     = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 4));
+
+    return data;
+}
+
