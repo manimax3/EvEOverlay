@@ -46,7 +46,7 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
     std::string last{};
     bool        foundone = false;
     if (scopes.size() > 0) {
-        out << "&scopes=";
+        out << "&scope=";
         last = scopes.back();
         scopes.pop_back();
         foundone = true;
