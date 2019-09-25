@@ -22,6 +22,8 @@ using SqliteStmtSPtr = std::shared_ptr<sqlite3_stmt>;
 SqliteSPtr     make_database_connection(const std::string &file = get_exe_dir() + data_folder + "data.db", bool migrate = true);
 SqliteStmtSPtr make_statement(SqliteSPtr dbconnection, const std::string &stmt);
 
+std::string column_get_string(sqlite3_stmt *stmt, int col);
+
 void migrate_tables(sqlite3 &dbconnection, int from, int to);
 int  get_pragma_version(sqlite3 &dbconnection);
 void set_pragma_version(sqlite3 &dbconnection, int value);

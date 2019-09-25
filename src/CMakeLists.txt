@@ -14,7 +14,8 @@ add_library(eveoverlay STATIC
 	base64.cpp
 	authentication.cpp
 	util.cpp
-	db.cpp)
+	db.cpp
+	esisession.cpp)
 
 target_link_libraries(eveoverlay PUBLIC 
 	Imgui Glad fmt glfw glm IconFontCppHeaders

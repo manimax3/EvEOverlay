@@ -75,6 +75,12 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
                      nullptr, nullptr, nullptr);
 
         break;
+    case 1:
+        sqlite3_exec(&dbconnection,
+                     "CREATE TABLE IF NOT EXISTS solarsystem(id, constellationid, name, planets, position, secclass, secstatus, starid, "
+                     "stargates, stations)",
+                     nullptr, nullptr, nullptr);
+        break;
     default:
         throw std::logic_error(fmt::format("Unsupported database migration. from version {0} to version {1}", from, to));
     }
@@ -115,3 +121,10 @@ eo::TokenData eo::db::get_latest_tokendata_by_expiredate(SqliteSPtr dbconnection
     return data;
 }
 
+std::string eo::db::column_get_string(sqlite3_stmt *stmt, int col)
+{
+    std::string output;
+    output.resize(sqlite3_column_bytes(stmt, col));
+    std::memcpy(output.data(), sqlite3_column_text(stmt, col), output.length());
+    return output;
+}

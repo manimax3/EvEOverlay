@@ -146,11 +146,13 @@ void eo::refresh_token(TokenData &token)
     HttpRequest request;
     request.hostname                           = eve_baseurl;
     request.target                             = "/v2/oauth/token";
+    request.requestType                        = HttpRequest::POST;
     request.headers[http::field::content_type] = "x-www-form-urlencoded";
     request.body = fmt::format("grant_type=refresh_token&refresh_token={0}&client_id={1}", token.refreshToken, client_id);
 
     const auto response = makeHttpRequest(request);
-    const json j        = json::parse(response.body);
+    log::info("{0}", response.body);
+    const json j = json::parse(response.body);
     j.at("access_token").get_to(token.accessToken);
     j.at("refresh_token").get_to(token.refreshToken);
 

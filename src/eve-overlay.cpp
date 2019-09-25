@@ -1,6 +1,7 @@
 #include "authentication.h"
 #include "base64.h"
 #include "db.h"
+#include "esisession.h"
 #include "gfx/imguiwindow.h"
 #include "logging.h"
 #include "requests.h"
@@ -38,16 +39,23 @@ int main()
     /* const auto verifyresult   = eo::verify_token(tokenrequest.access_token); */
     /* eo::log::info(verifyresult.characterName); */
 
-    auto conn = eo::db::make_database_connection();
+    auto           conn = eo::db::make_database_connection();
+    eo::EsiSession session{ conn };
+
+    const auto location = session.getCharacterLocation();
+    const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn);
+
+	eo::log::info("System name {0}", system.name);
+
     /* eo::db::store_in_db(conn, eo::make_token_data(tokenrequest, verifyresult)); */
 
-    try {
-        auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn);
-        eo::log::info("TokenData Dump:\n{0}", json(tokendata).dump(2));
-        eo::log::info("Token expired? {0}", eo::token_expired(tokendata));
-    } catch (const std::runtime_error &e) {
-        eo::log::error("Couldnt find a token in the databse");
-    }
+    /* try { */
+    /*     auto tokendata = eo::db::get_latest_tokendata_by_expiredate(conn); */
+    /*     eo::log::info("TokenData Dump:\n{0}", json(tokendata).dump(2)); */
+    /*     eo::log::info("Token expired? {0}", eo::token_expired(tokendata)); */
+    /* } catch (const std::runtime_error &e) { */
+    /*     eo::log::error("Couldnt find a token in the databse"); */
+    /* } */
 
     // We need to store this somewhere
     // Verify request also get the expiration date
