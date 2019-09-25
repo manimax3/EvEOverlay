@@ -123,7 +123,7 @@ eo::TokenRequestResult eo::make_token_request(const AuthenticationCode &auth_cod
 
     auto j = json::parse(response.body);
 
-    return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token") };
+    return TokenRequestResult{ j.at("access_token"), j.at("expires_in"), j.at("token_type"), j.at("refresh_token"), code_challenge };
 }
 
 eo::VerifyTokenRequestResult eo::verify_token(const AuthenticationCode &auth_code)
@@ -147,11 +147,11 @@ void eo::refresh_token(TokenData &token)
     request.hostname                           = eve_baseurl;
     request.target                             = "/v2/oauth/token";
     request.requestType                        = HttpRequest::POST;
-    request.headers[http::field::content_type] = "x-www-form-urlencoded";
-    request.body = fmt::format("grant_type=refresh_token&refresh_token={0}&client_id={1}", token.refreshToken, client_id);
+    request.headers[http::field::content_type] = "application/x-www-form-urlencoded";
+    request.body = fmt::format("grant_type=refresh_token&refresh_token={0}&client_id={1}&code_verifier={2}", token.refreshToken, client_id,
+                               token.codeChallenge);
 
     const auto response = makeHttpRequest(request);
-    log::info("{0}", response.body);
     const json j = json::parse(response.body);
     j.at("access_token").get_to(token.accessToken);
     j.at("refresh_token").get_to(token.refreshToken);

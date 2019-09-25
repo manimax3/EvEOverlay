@@ -71,7 +71,8 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
 
     switch (from) {
     case 0:
-        sqlite3_exec(&dbconnection, "CREATE TABLE IF NOT EXISTS token(refreshtoken, charactername, characterid, accesstoken, expireson)",
+        sqlite3_exec(&dbconnection,
+                     "CREATE TABLE IF NOT EXISTS token(refreshtoken, charactername, characterid, accesstoken, expireson, codechallenge)",
                      nullptr, nullptr, nullptr);
 
         break;
@@ -90,12 +91,13 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
 
 void eo::db::store_in_db(SqliteSPtr dbconnection, const TokenData &data)
 {
-    auto stmt = make_statement(std::move(dbconnection), "INSERT INTO token VALUES(?,?,?,?,?)");
+    auto stmt = make_statement(std::move(dbconnection), "INSERT INTO token VALUES(?,?,?,?,?,?)");
     sqlite3_bind_text(stmt.get(), 1, data.refreshToken.c_str(), data.refreshToken.length(), nullptr);
     sqlite3_bind_text(stmt.get(), 2, data.characterName.c_str(), data.characterName.length(), nullptr);
     sqlite3_bind_int(stmt.get(), 3, data.characterID);
     sqlite3_bind_text(stmt.get(), 4, data.accessToken.c_str(), data.accessToken.length(), nullptr);
     sqlite3_bind_text(stmt.get(), 5, data.expiresOn.c_str(), data.expiresOn.length(), nullptr);
+    sqlite3_bind_text(stmt.get(), 6, data.codeChallenge.c_str(), data.codeChallenge.length(), nullptr);
     sqlite3_step(stmt.get());
 }
 
@@ -112,11 +114,12 @@ eo::TokenData eo::db::get_latest_tokendata_by_expiredate(SqliteSPtr dbconnection
     sqlite3_step(stmt.get());
 
     TokenData data;
-    data.refreshToken  = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 0));
-    data.characterName = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 1));
+    data.refreshToken  = column_get_string(stmt.get(), 0);
+    data.characterName = column_get_string(stmt.get(), 1);
     data.characterID   = sqlite3_column_int(stmt.get(), 2);
-    data.accessToken   = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 3));
-    data.expiresOn     = reinterpret_cast<const char *>(sqlite3_column_text(stmt.get(), 4));
+    data.accessToken   = column_get_string(stmt.get(), 3);
+    data.expiresOn     = column_get_string(stmt.get(), 4);
+    data.codeChallenge = column_get_string(stmt.get(), 5);
 
     return data;
 }

@@ -22,6 +22,7 @@ eo::EsiSession::EsiSession(db::SqliteSPtr dbconnection)
         token = db::get_latest_tokendata_by_expiredate(mDbConnection);
         if (token_expired(token)) {
             refresh_token(token);
+            db::store_in_db(mDbConnection, token);
         }
     } catch (const std::runtime_error &re) {
         const auto cc = make_authorize_request({ "esi-location.read_location.v1" });
@@ -47,8 +48,7 @@ CharacterLocation eo::EsiSession::getCharacterLocation()
     request.target                              = fmt::format("/v1/characters/{0}/location/", mCurrentToken.characterID);
     request.headers[http::field::authorization] = fmt::format("Bearer {0}", mCurrentToken.accessToken);
     const auto response                         = makeHttpRequest(request);
-    log::info("{0}", response.body);
-    const auto j = json::parse(response.body);
+    const auto j                                = json::parse(response.body);
 
     CharacterLocation location;
     j.at("solar_system_id").get_to(location.solarSystemID);

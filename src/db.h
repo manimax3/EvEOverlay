@@ -14,7 +14,7 @@ struct TokenData;
 
 namespace eo::db {
 
-constexpr const int CURRENT_VERSION = 1;
+constexpr const int CURRENT_VERSION = 2;
 
 using SqliteSPtr     = std::shared_ptr<sqlite3>;
 using SqliteStmtSPtr = std::shared_ptr<sqlite3_stmt>;
