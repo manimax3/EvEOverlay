@@ -8,8 +8,8 @@ find_package(nlohmann_json 3.1.2 REQUIRED)
 find_package(SQLite3 3.3 REQUIRED)
 
 add_library(eveoverlay STATIC 
-	gfx/displaywindow.cpp
-	gfx/imguiwindow.cpp
+	displaywindow.cpp
+	imguiwindow.cpp
 	requests.cpp
 	base64.cpp
 	authentication.cpp

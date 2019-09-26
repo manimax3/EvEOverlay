@@ -18,7 +18,7 @@
 #include "base64.h"
 #include "db.h"
 #include "esisession.h"
-#include "gfx/imguiwindow.h"
+#include "imguiwindow.h"
 #include "logging.h"
 #include "requests.h"
 #include <iostream>

@@ -17,8 +17,8 @@
 #pragma once
 #include <string>
 
-#include "../math.h"
-#include "../util.h"
+#include "./math.h"
+#include "util.h"
 
 struct GLFWwindow;
 

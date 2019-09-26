@@ -20,7 +20,7 @@
 #include "GLFW/glfw3.h"
 #include "glad/glad.h"
 
-#include "../logging.h"
+#include "logging.h"
 
 namespace {
 bool initGlfw()
