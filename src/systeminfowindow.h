@@ -14,36 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "authentication.h"
-#include "base64.h"
-#include "db.h"
+#pragma once
 #include "esisession.h"
 #include "imguiwindow.h"
-#include "logging.h"
-#include "requests.h"
-#include "systeminfowindow.h"
-#include <iostream>
 
-#include <nlohmann/json.hpp>
-#include <openssl/sha.h>
+#include <chrono>
 
-using json = nlohmann::json;
+namespace eo {
+class SystemInfoWindow : public ImguiWindow {
+public:
+    constexpr static auto refresh_system = std::chrono::seconds(30);
+    explicit SystemInfoWindow(const std::shared_ptr<EsiSession> &esisession);
 
-int main()
-{
-    auto conn    = eo::db::make_database_connection();
-    auto session = std::make_shared<eo::EsiSession>(conn);
+protected:
+    void renderImguiContents() override;
 
-    /* const auto location = session->getCharacterLocation(); */
-    /* const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn); */
+	void fetchNextSystem();
 
-    /* eo::log::info("System name {0}", system.name); */
-    eo::SystemInfoWindow window(session);
-
-    while (!window.shouldWindowClose()) {
-        window.pollEvents();
-        window.frame();
-    }
-
-    return 0;
+private:
+    esi::SolarSystem                      currentSystem{};
+    std::shared_ptr<EsiSession>           mEsiSession{};
+    std::chrono::steady_clock::time_point lastCheck = std::chrono::steady_clock::now();
+};
 }

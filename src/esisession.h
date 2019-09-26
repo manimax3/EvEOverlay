@@ -55,6 +55,8 @@ public:
 
     esi::CharacterLocation getCharacterLocation();
 
+    db::SqliteSPtr getDbConnection() const { return mDbConnection; }
+
 private:
     // Make sure this is alwasys valid
     // Invariant: Valid token which might be expired

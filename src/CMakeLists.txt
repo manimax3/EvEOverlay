@@ -10,6 +10,7 @@ find_package(SQLite3 3.3 REQUIRED)
 add_library(eveoverlay STATIC 
 	displaywindow.cpp
 	imguiwindow.cpp
+	systeminfowindow.cpp
 	requests.cpp
 	base64.cpp
 	authentication.cpp
