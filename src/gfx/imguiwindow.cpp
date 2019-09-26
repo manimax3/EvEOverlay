@@ -85,6 +85,8 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
     ImGui::StyleColorsDark();
     auto &io = ImGui::GetIO();
 
+    ImGui::GetStyle().WindowRounding = 0.f;
+
     assert(io.Fonts->AddFontFromFileTTF("assets/NotoMono-Regular.ttf", font_size));
 
     const ImWchar icons_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
@@ -213,7 +215,11 @@ void eo::ImguiWindow::renderContents()
     io.MouseDown[2] = glfwGetMouseButton(mWindow, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 
     ImGui::NewFrame();
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y));
+    ImGui::SetNextWindowPos({ 0.f, 0.f });
+    ImGui::Begin(mName.c_str(), NULL, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar);
     renderImguiContents();
+    ImGui::End();
     ImGui::EndFrame();
     ImGui::Render();
 
@@ -339,14 +345,14 @@ eo::ImguiWindow::~ImguiWindow()
 
 void eo::ImguiWindow::renderImguiContents()
 {
-    const auto display_size = getFramebufferSize();
-    ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y));
-    ImGui::SetNextWindowPos({ 0.f, 0.f });
-    ImGui::Begin("Hall welt", NULL, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar);
-    for (int i = 0; i < 50; i++) {
-        ImGui::Button("Drueck mich");
-        ImGui::SameLine();
-        ImGui::Text("%s", fmt::format("Hallo {0} Was geht", ICON_FK_BICYCLE).c_str());
+    for (int i = 0; i < 12; ++i) {
+        const std::string is = std::to_string(i);
+        if (ImGui::CollapsingHeader(is.c_str())) {
+            for (int j = 0; j < 50; j++) {
+                ImGui::Button("Drueck mich");
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1, 1, 0, 1), "%s", fmt::format("Hallo {0} Was geht", ICON_FK_BICYCLE).c_str());
+            }
+        }
     }
-    ImGui::End();
 }

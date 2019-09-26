@@ -48,6 +48,7 @@ void terminateGlfw()
 void eo::DisplayWindow::pollEvents() { glfwPollEvents(); }
 
 eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int posx, int posy)
+	: mName(std::move(name))
 {
     log::info("Creating a new window {0}", name);
 
@@ -63,7 +64,7 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-    mWindow = glfwCreateWindow(width, height, name.c_str(), NULL, NULL);
+    mWindow = glfwCreateWindow(width, height, mName.c_str(), NULL, NULL);
 
     if (!mWindow) {
         log::error("Could not create a valid window");

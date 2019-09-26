@@ -63,5 +63,6 @@ protected:
     void         framebufferResizeCallback(int width, int height);
 
     GLFWwindow *mWindow = nullptr;
+	std::string mName;
 };
 }
