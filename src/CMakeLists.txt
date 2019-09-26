@@ -26,3 +26,9 @@ target_link_libraries(eveoverlay PUBLIC
 add_executable(eve-overlay eve-overlay.cpp)
 
 target_link_libraries(eve-overlay PUBLIC eveoverlay)
+
+if(NOT MSVC)
+	target_compile_options(eveoverlay PUBLIC -Wall -Wextra)
+	target_compile_options(eveoverlay PUBLIC $<$<CONFIG:DEBUG>:-fno-omit-frame-pointer -fsanitize=address>)
+	target_link_libraries(eveoverlay PUBLIC $<$<CONFIG:DEBUG>:-fsanitize=address>)
+endif()
