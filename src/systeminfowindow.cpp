@@ -16,13 +16,30 @@
 
 #include "systeminfowindow.h"
 #include "imgui.h"
+#include "logging.h"
+
+#include <algorithm>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 eo::SystemInfoWindow::SystemInfoWindow(const std::shared_ptr<EsiSession> &session)
     : ImguiWindow(256, 256, "SystemInfoWindow", 0, 0)
     , mEsiSession(session)
 {
+    cachedKillmails.reserve(3);
     const auto character_location = mEsiSession->getCharacterLocation();
     currentSystem                 = resolveSolarSystem(character_location.solarSystemID, mEsiSession->getDbConnection());
+    const auto killmails          = getKillsInSystem(currentSystem.systemID, 3);
+    std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
+                   [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
+                       const auto  km          = resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash, session->getDbConnection());
+                       const auto  j           = json::parse(km.victimJson);
+                       const int32 characterID = j.at("character_id");
+                       const int32 shipTypeID  = j.at("ship_type_id");
+
+                       return { std::to_string(characterID), getTypeName(shipTypeID) };
+                   });
 }
 
 void eo::SystemInfoWindow::fetchNextSystem()
@@ -33,7 +50,7 @@ void eo::SystemInfoWindow::fetchNextSystem()
             currentSystem = resolveSolarSystem(character_location.solarSystemID, mEsiSession->getDbConnection());
         }
 
-		lastCheck = std::chrono::steady_clock::now();
+        lastCheck = std::chrono::steady_clock::now();
     }
 }
 
@@ -57,6 +74,12 @@ void eo::SystemInfoWindow::renderImguiContents()
         ImGui::TextColored(ImVec4(1, 0.3, 0.3, 1), "%.1f", currentSystem.securityStatus);
         ImGui::NextColumn();
         ImGui::Columns(1);
-		ImGui::Separator();
+        ImGui::Separator();
+
+        for (const auto &km : cachedKillmails) {
+            ImGui::Text("%s", std::get<0>(km).c_str());
+            ImGui::SameLine();
+            ImGui::Text("%s", std::get<1>(km).c_str());
+        }
     }
 }

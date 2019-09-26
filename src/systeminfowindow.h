@@ -18,7 +18,9 @@
 #include "esisession.h"
 #include "imguiwindow.h"
 
+#include <array>
 #include <chrono>
+#include <tuple>
 
 namespace eo {
 class SystemInfoWindow : public ImguiWindow {
@@ -29,11 +31,13 @@ public:
 protected:
     void renderImguiContents() override;
 
-	void fetchNextSystem();
+    void fetchNextSystem();
 
 private:
     esi::SolarSystem                      currentSystem{};
     std::shared_ptr<EsiSession>           mEsiSession{};
     std::chrono::steady_clock::time_point lastCheck = std::chrono::steady_clock::now();
+
+    std::vector<std::tuple<std::string, std::string>> cachedKillmails;
 };
 }

@@ -215,7 +215,7 @@ std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
         }
 
         ZkbKill k;
-        item.at("killmaild_id").get_to(k.killmailID);
+        item.at("killmail_id").get_to(k.killmailID);
         const auto &zkbdata = item.at("zkb");
         zkbdata.at("hash").get_to(k.killmailHash);
         zkbdata.at("fittedValue").get_to(k.fittedValue);
@@ -241,7 +241,7 @@ std::string eo::getTypeName(int32 invtypeid)
         return "INVALID"; // This function should be frontend only anyway
     }
 
-    stmt = db::make_statement(std::move(dbconn), "SELECT typenName FROM invTypes WHERE typeid = ? LIMIT 1");
+    stmt = db::make_statement(std::move(dbconn), "SELECT typeName FROM invTypes WHERE typeid = cast(? as TEXT) LIMIT 1;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);
     sqlite3_step(stmt.get());
     return db::column_get_string(stmt.get(), 0);
