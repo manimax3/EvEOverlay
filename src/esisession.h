@@ -18,6 +18,8 @@
 #include "authentication.h"
 #include "db.h"
 
+#include <vector>
+
 namespace eo {
 
 /*
@@ -49,6 +51,17 @@ namespace esi {
         int32       systemID;
         std::string attackersJson;
         std::string victimJson;
+    };
+
+    struct ZkbKill {
+        int32       killmailID;
+        std::string killmailHash;
+        double      fittedValue;
+        double      totalValue;
+        int32       points;
+        bool        npc;
+        bool        solo;
+        bool        awox;
     };
 }
 
@@ -82,4 +95,8 @@ private:
 esi::SolarSystem resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnection = {});
 
 esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash, db::SqliteSPtr dbconnection = {});
+
+std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit = 3);
+
+std::string getTypeName(int32 invtypedid);
 }

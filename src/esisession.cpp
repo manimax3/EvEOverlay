@@ -172,7 +172,7 @@ Killmail eo::resolveKillmail(int32 killmailid, const std::string &killmailhash, 
             auto select = db::make_statement(dbconnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
             sqlite3_bind_int(select.get(), 1, killmailid);
             sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
-			sqlite3_step(select.get());
+            sqlite3_step(select.get());
             km.killmailID    = killmailid;
             km.killmailHash  = killmailhash;
             km.systemID      = sqlite3_column_int(select.get(), 0);
@@ -191,8 +191,58 @@ Killmail eo::resolveKillmail(int32 killmailid, const std::string &killmailhash, 
         sqlite3_bind_int(stmt.get(), 3, km.systemID);
         sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
         sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
-		sqlite3_step(stmt.get());
+        sqlite3_step(stmt.get());
     }
 
     return km;
+}
+
+std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
+{
+    HttpRequest req;
+    req.hostname = "zkillboard.com";
+    req.target   = fmt::format("/api/kills/solarSystemID/{0}/", solarsystemid);
+
+    const auto response = makeHttpRequest(std::move(req));
+    const auto j        = json::parse(response.body);
+
+    std::vector<ZkbKill> kills;
+    kills.reserve(limit);
+    int c = 0;
+    for (auto &&item : j) {
+        if (++c == limit) {
+            break;
+        }
+
+        ZkbKill k;
+        item.at("killmaild_id").get_to(k.killmailID);
+        const auto &zkbdata = item.at("zkb");
+        zkbdata.at("hash").get_to(k.killmailHash);
+        zkbdata.at("fittedValue").get_to(k.fittedValue);
+        zkbdata.at("totalValue").get_to(k.totalValue);
+        zkbdata.at("points").get_to(k.points);
+        zkbdata.at("npc").get_to(k.npc);
+        zkbdata.at("solo").get_to(k.solo);
+        zkbdata.at("awox").get_to(k.awox);
+
+        kills.push_back(std::move(k));
+    }
+
+    return kills;
+}
+
+std::string eo::getTypeName(int32 invtypeid)
+{
+    auto dbconn = db::make_database_connection("assets/invTypes.db");
+    auto stmt   = db::make_statement(dbconn, "SELECT COUNT(*) FROM invtypes WHERE typeid = ?");
+    sqlite3_bind_int(stmt.get(), 1, invtypeid);
+    sqlite3_step(stmt.get());
+    if (sqlite3_column_int(stmt.get(), 0) != 0) {
+        return "INVALID"; // This function should be frontend only anyway
+    }
+
+    stmt = db::make_statement(std::move(dbconn), "SELECT typenName FROM invTypes WHERE typeid = ? LIMIT 1");
+    sqlite3_bind_int(stmt.get(), 1, invtypeid);
+    sqlite3_step(stmt.get());
+    return db::column_get_string(stmt.get(), 0);
 }
