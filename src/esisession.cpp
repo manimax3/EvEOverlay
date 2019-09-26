@@ -147,3 +147,52 @@ SolarSystem eo::resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnect
 
     return system;
 }
+
+Killmail eo::resolveKillmail(int32 killmailid, const std::string &killmailhash, db::SqliteSPtr dbconnection)
+{
+    Killmail km;
+    if (!dbconnection) {
+        HttpRequest req;
+        req.hostname = "esi.evetech.net";
+        req.target   = fmt::format("/v1/killmails/{0}/{1}/", killmailid, killmailhash);
+
+        const auto response = makeHttpRequest(std::move(req));
+        const auto j        = json::parse(response.body);
+        km.killmailID       = killmailid;
+        km.killmailHash     = killmailhash;
+        j.at("solar_system_id").get_to(km.systemID);
+        km.attackersJson = j.at("attackers").dump();
+        km.victimJson    = j.at("victim").dump();
+    } else {
+        auto stmt = db::make_statement(dbconnection, "SELECT COUNT(*) FROM killmail WHERE id = ? AND hash = ?;");
+        sqlite3_bind_int(stmt.get(), 1, killmailid);
+        sqlite3_bind_text(stmt.get(), 2, killmailhash.c_str(), -1, nullptr);
+        sqlite3_step(stmt.get());
+        if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
+            auto select = db::make_statement(dbconnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
+            sqlite3_bind_int(select.get(), 1, killmailid);
+            sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
+			sqlite3_step(select.get());
+            km.killmailID    = killmailid;
+            km.killmailHash  = killmailhash;
+            km.systemID      = sqlite3_column_int(select.get(), 0);
+            km.attackersJson = db::column_get_string(select.get(), 1);
+            km.victimJson    = db::column_get_string(select.get(), 2);
+            return km;
+        } else if (results == 0) {
+            km = eo::resolveKillmail(killmailid, killmailhash, nullptr);
+        } else {
+            throw std::runtime_error(fmt::format("Found {0} killmaiml with the id {1} in the database", results, killmailid));
+        }
+
+        stmt = db::make_statement(std::move(dbconnection), "INSERT INTO killmail VALUES(?,?,?,?,?)");
+        sqlite3_bind_int(stmt.get(), 1, km.killmailID);
+        sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
+        sqlite3_bind_int(stmt.get(), 3, km.systemID);
+        sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
+        sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
+		sqlite3_step(stmt.get());
+    }
+
+    return km;
+}

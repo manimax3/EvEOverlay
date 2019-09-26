@@ -57,5 +57,6 @@ void eo::SystemInfoWindow::renderImguiContents()
         ImGui::TextColored(ImVec4(1, 0.3, 0.3, 1), "%.1f", currentSystem.securityStatus);
         ImGui::NextColumn();
         ImGui::Columns(1);
+		ImGui::Separator();
     }
 }

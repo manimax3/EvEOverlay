@@ -98,6 +98,10 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
                      "stargates, stations)",
                      nullptr, nullptr, nullptr);
         break;
+    case 2:
+        sqlite3_exec(&dbconnection, "CREATE TABLE IF NOT EXISTS killmail(id, hash, systemid, attackers, victim);", nullptr, nullptr,
+                     nullptr);
+        break;
     default:
         throw std::logic_error(fmt::format("Unsupported database migration. from version {0} to version {1}", from, to));
     }

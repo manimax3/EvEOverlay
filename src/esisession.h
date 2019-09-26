@@ -42,6 +42,14 @@ namespace esi {
         std::string stargatesJson;
         std::string stationsJson;
     };
+
+    struct Killmail {
+        int32       killmailID;
+        std::string killmailHash;
+        int32       systemID;
+        std::string attackersJson;
+        std::string victimJson;
+    };
 }
 
 /*
@@ -73,4 +81,5 @@ private:
  */
 esi::SolarSystem resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnection = {});
 
+esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash, db::SqliteSPtr dbconnection = {});
 }
