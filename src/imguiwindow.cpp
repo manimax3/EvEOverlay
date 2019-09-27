@@ -87,13 +87,18 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
 
     ImGui::GetStyle().WindowRounding = 0.f;
 
-    assert(io.Fonts->AddFontFromFileTTF("assets/NotoMono-Regular.ttf", font_size));
+    if (!io.Fonts->AddFontFromFileTTF("assets/NotoMono-Regular.ttf", font_size)) {
+        throw std::logic_error("Could not load/find font file: NotoMono-Regular.ttf");
+    }
 
     const ImWchar icons_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
     ImFontConfig  icons_config;
     icons_config.PixelSnapH = true;
     icons_config.MergeMode  = true;
-    assert(io.Fonts->AddFontFromFileTTF("assets/" FONT_ICON_FILE_NAME_FK, font_size, &icons_config, icons_ranges));
+
+    if (!io.Fonts->AddFontFromFileTTF("assets/" FONT_ICON_FILE_NAME_FK, font_size, &icons_config, icons_ranges)) {
+        throw std::logic_error("Could not load/find font file: ForkAwesome");
+    }
 
     io.Fonts->Build();
 
