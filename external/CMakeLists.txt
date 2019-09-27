@@ -4,6 +4,7 @@ add_library(Imgui STATIC
 	imgui/imgui_draw.cpp
 	imgui/imgui_widgets.cpp)
 target_include_directories(Imgui PUBLIC imgui)
+target_compile_options(Imgui PRIVATE -g -fno-omit-frame-pointer)
 
 add_library(Glad STATIC glad/glad.c)
 target_include_directories(Glad PUBLIC glad)
