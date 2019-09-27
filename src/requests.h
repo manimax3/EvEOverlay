@@ -63,8 +63,8 @@ struct HttpRequest {
     enum Type { GET, POST };
     std::string hostname;
     Type        requestType = GET;
-    std::string target;
-    FieldMap    headers;
+    std::string target = "/";
+    FieldMap    headers{};
     std::string body = {};
     std::string port = "443";
 };

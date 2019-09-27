@@ -67,7 +67,13 @@ CharacterLocation eo::EsiSession::getCharacterLocation()
     const auto j                                = json::parse(response.body);
 
     CharacterLocation location;
-    j.at("solar_system_id").get_to(location.solarSystemID);
+    try {
+        j.at("solar_system_id").get_to(location.solarSystemID);
+    } catch (const json::out_of_range &e) {
+		log::error("Missing solar system id for location retrieval");
+        log::error("{0}", response.body);
+		throw e;
+    }
 
     // TODO Quite the common case, should not be handled by exception
     try {
