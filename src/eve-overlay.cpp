@@ -35,6 +35,10 @@ int main()
     auto conn    = eo::db::make_database_connection();
     auto session = std::make_shared<eo::EsiSession>(conn);
 
+    eo::HttpRequest r;
+    r.hostname = "google.de";
+    iostate->makeAsyncHttpRequest(r, [](auto &&) {});
+
     /* const auto location = session->getCharacterLocation(); */
     /* const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn); */
 
