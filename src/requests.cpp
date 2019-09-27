@@ -30,11 +30,13 @@ using tcp     = net::ip::tcp;
 
 class AsyncHttpRequest : public std::enable_shared_from_this<AsyncHttpRequest> {
 public:
-    explicit AsyncHttpRequest(HttpRequest r, IOState &state)
+    explicit AsyncHttpRequest(HttpRequest r, IOState &state, std::function<void(const HttpResponse &, IOState &)> callback)
         : request(std::move(r))
         , ctx(ssl::context::tlsv12_client)
         , mStream(*state.getIoC(), ctx)
         , mResolver(*state.getIoC())
+        , mCallback(std::move(callback))
+        , mIOState(state)
     {
     }
 
@@ -61,11 +63,11 @@ public:
     {
         beast::get_lowest_layer(mStream).expires_after(std::chrono::seconds(30));
 
-        httprequest = { request.requestType == eo::HttpRequest::GET ? http::verb::get : http::verb::post,
-                                                      request.target, 11 };
+        httprequest = { request.requestType == eo::HttpRequest::GET ? http::verb::get : http::verb::post, request.target, 11 };
 
-        const auto makevisitor
-            = [&httprequest = httprequest](const auto &value) { return [&value, &httprequest](const auto &header) { httprequest.set(header, value); }; };
+        const auto makevisitor = [&httprequest = httprequest](const auto &value) {
+            return [&value, &httprequest](const auto &header) { httprequest.set(header, value); };
+        };
 
         httprequest.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
         httprequest.set(http::field::host, request.hostname);
@@ -97,12 +99,14 @@ public:
             response.headers[key] = std::move(value);
         }
 
+        net::post(*mIOState.getIoC(), bind(mCallback, std::move(response), mIOState));
         mStream.async_shutdown([kp = shared_from_this()](auto &&) {});
-
-        std::cout << response.body << std::endl;
     }
 
 private:
+    std::function<void(const HttpResponse &, IOState &)> mCallback;
+
+    IOState &                            mIOState;
     HttpRequest                          request;
     HttpResponse                         response;
     ssl::context                         ctx;
@@ -121,9 +125,10 @@ void eo::IOState::pollIoC() { mIoContext->poll(); }
 
 void eo::IOState::runIoC() { mIoContext->run(); }
 
-void eo::IOState::makeAsyncHttpRequest(const struct HttpRequest &request, std::function<void(const struct HttpResponse &)> callback)
+void eo::IOState::makeAsyncHttpRequest(const struct HttpRequest &                                  request,
+                                       std::function<void(const struct HttpResponse &, IOState &)> callback)
 {
-    auto asyncrequest = std::make_shared<AsyncHttpRequest>(request, *this);
+    auto asyncrequest = std::make_shared<AsyncHttpRequest>(request, *this, std::move(callback));
     asyncrequest->run();
 }
 

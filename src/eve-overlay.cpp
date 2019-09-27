@@ -36,8 +36,10 @@ int main()
     auto session = std::make_shared<eo::EsiSession>(conn);
 
     eo::HttpRequest r;
-    r.hostname = "google.de";
-    iostate->makeAsyncHttpRequest(r, [](auto &&) {});
+    r.hostname = "www.google.de";
+    r.port     = "443";
+    r.target   = "/";
+    iostate->makeAsyncHttpRequest(r, [](auto &&response, auto &&) { eo::log::info("{0}", response.body); });
 
     /* const auto location = session->getCharacterLocation(); */
     /* const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn); */

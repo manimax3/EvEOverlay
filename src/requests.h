@@ -43,7 +43,7 @@ public:
     void pollIoC();
     void runIoC();
 
-    void makeAsyncHttpRequest(const struct HttpRequest &request, std::function<void(const struct HttpResponse &)> callback);
+    void makeAsyncHttpRequest(const struct HttpRequest &request, std::function<void(const struct HttpResponse &, IOState &)> callback);
 
 private:
     std::shared_ptr<net::io_context> mIoContext;
