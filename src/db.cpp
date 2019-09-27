@@ -124,8 +124,8 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
         // bad api desing from my side, so we have to do it manually
         sqlite3_stmt *begin_trans;
         sqlite3_prepare_v2(&dbconnection, "BEGIN TRANSACTION;", -1, &begin_trans, nullptr);
-		sqlite3_step(begin_trans);
-		sqlite3_finalize(begin_trans);
+        sqlite3_step(begin_trans);
+        sqlite3_finalize(begin_trans);
         sqlite3_stmt *sqlstmt;
         sqlite3_prepare_v2(&dbconnection, "INSERT INTO invTypes VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", -1, &sqlstmt, nullptr);
         for (const auto &ie : result) {
@@ -163,15 +163,15 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
             value = ie.at("graphicID").get<std::string_view>();
             sqlite3_bind_text(sqlstmt, ++col, value.data(), value.length(), nullptr);
 
-			sqlite3_step(sqlstmt);
-			sqlite3_reset(sqlstmt);
+            sqlite3_step(sqlstmt);
+            sqlite3_reset(sqlstmt);
         }
         sqlite3_finalize(sqlstmt);
 
         sqlite3_stmt *end_trans;
         sqlite3_prepare_v2(&dbconnection, "END TRANSACTION;", -1, &end_trans, nullptr);
-		sqlite3_step(end_trans);
-		sqlite3_finalize(end_trans);
+        sqlite3_step(end_trans);
+        sqlite3_finalize(end_trans);
 
     } break;
     default:

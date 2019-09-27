@@ -38,7 +38,7 @@ eo::SystemInfoWindow::SystemInfoWindow(const std::shared_ptr<EsiSession> &sessio
                        const int32 characterID = j.at("character_id");
                        const int32 shipTypeID  = j.at("ship_type_id");
 
-                       return { std::to_string(characterID), getTypeName(shipTypeID) };
+                       return { std::to_string(characterID), getTypeName(shipTypeID, session->getDbConnection()) };
                    });
 }
 

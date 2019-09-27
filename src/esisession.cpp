@@ -231,17 +231,16 @@ std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
     return kills;
 }
 
-std::string eo::getTypeName(int32 invtypeid)
+std::string eo::getTypeName(int32 invtypeid, db::SqliteSPtr dbconnection)
 {
-    auto dbconn = db::make_database_connection("assets/invTypes.db");
-    auto stmt   = db::make_statement(dbconn, "SELECT COUNT(*) FROM invtypes WHERE typeid = ?");
+    auto stmt = db::make_statement(dbconnection, "SELECT COUNT(*) FROM invTypes WHERE typeID = ?;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);
     sqlite3_step(stmt.get());
-    if (sqlite3_column_int(stmt.get(), 0) != 0) {
-        return "INVALID"; // This function should be frontend only anyway
+    if (sqlite3_column_int(stmt.get(), 0) != 1) {
+        return fmt::format("INVALID - {0}", invtypeid); // This function should be frontend only anyway
     }
 
-    stmt = db::make_statement(std::move(dbconn), "SELECT typeName FROM invTypes WHERE typeid = cast(? as TEXT) LIMIT 1;");
+    stmt = db::make_statement(std::move(dbconnection), "SELECT typeName FROM invTypes WHERE typeid = ? LIMIT 1;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);
     sqlite3_step(stmt.get());
     return db::column_get_string(stmt.get(), 0);

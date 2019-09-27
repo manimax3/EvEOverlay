@@ -98,5 +98,5 @@ esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash,
 
 std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit = 3);
 
-std::string getTypeName(int32 invtypedid);
+std::string getTypeName(int32 invtypedid, db::SqliteSPtr dbconnection = {});
 }
