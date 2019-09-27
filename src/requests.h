@@ -17,9 +17,14 @@
 #pragma once
 #include "util.h"
 #include <map>
+#include <memory>
 #include <variant>
 
 #include <boost/beast/http/field.hpp>
+
+namespace boost::asio {
+struct io_context;
+}
 
 namespace eo {
 
@@ -28,6 +33,19 @@ namespace beast = boost::beast;
 namespace http  = beast::http;
 namespace net   = boost::asio;
 using FieldMap  = std::map<std::variant<http::field, std::string>, std::string>;
+
+class IOState {
+public:
+    IOState();
+
+    inline auto &getIoC() { return mIoContext; }
+
+    void pollIoC();
+    void runIoC();
+
+private:
+    std::shared_ptr<net::io_context> mIoContext;
+};
 
 void        open_url_browser(const std::string &url);
 std::string urlencode(const std::string &input);

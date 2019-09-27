@@ -16,6 +16,7 @@
 
 #include "requests.h"
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include <boost/beast/core.hpp>
@@ -27,13 +28,12 @@ namespace eo {
 namespace ssl = boost::asio::ssl;
 using tcp     = net::ip::tcp;
 }
-namespace {
-auto &get_io_context()
-{
-    static eo::net::io_context context;
-    return context;
-}
-}
+
+eo::IOState::IOState() { mIoContext = std::make_shared<net::io_context>(); }
+
+void eo::IOState::pollIoC() { mIoContext->poll(); }
+
+void eo::IOState::runIoC() { mIoContext->run(); }
 
 void eo::open_url_browser(const std::string &url)
 {
@@ -84,8 +84,8 @@ std::string eo::base64_safe(const std::string &base64)
 
 eo::HttpResponse eo::makeHttpRequest(const HttpRequest &request)
 {
-    auto &       ioc = get_io_context();
-    ssl::context ctx(ssl::context::tlsv12_client);
+    net::io_context ioc;
+    ssl::context    ctx(ssl::context::tlsv12_client);
     ctx.set_default_verify_paths();
 
     tcp::resolver                        resolver(ioc);
@@ -133,10 +133,10 @@ eo::HttpResponse eo::makeHttpRequest(const HttpRequest &request)
 
 eo::HttpRequest eo::expectHttpRequest(const HttpResponse &response, unsigned short port, const std::string &ip)
 {
-    const auto    address = net::ip::make_address(ip);
-    auto &        ioc     = get_io_context();
-    tcp::acceptor acceptor{ ioc, { address, port } };
-    tcp::socket   socket{ ioc };
+    const auto      address = net::ip::make_address(ip);
+    net::io_context ioc;
+    tcp::acceptor   acceptor{ ioc, { address, port } };
+    tcp::socket     socket{ ioc };
     acceptor.accept(socket);
 
     beast::flat_buffer               buffer;

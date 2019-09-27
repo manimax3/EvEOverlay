@@ -31,6 +31,7 @@ using json = nlohmann::json;
 
 int main()
 {
+    auto iostate = std::make_shared<eo::IOState>();
     auto conn    = eo::db::make_database_connection();
     auto session = std::make_shared<eo::EsiSession>(conn);
 
@@ -43,6 +44,7 @@ int main()
     while (!window.shouldWindowClose()) {
         window.pollEvents();
         window.frame();
+        iostate->pollIoC();
     }
 
     return 0;
