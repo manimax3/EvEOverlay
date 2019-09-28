@@ -35,17 +35,26 @@ void eo::SystemInfoWindow::fetchNextSystem(bool now)
 {
     if ((std::chrono::steady_clock::now() - lastCheck) > refresh_system || now) {
         mEsiSession->getCharacterLocationAsync([this](auto &&location) {
-            currentSystem = mEsiSession->resolveSolarSystem(location.solarSystemID);
-            mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [&](auto &&killmails) {
-                std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
-                               [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
-                                   const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
-                                   const auto  j           = json::parse(km.victimJson);
-                                   const int32 characterID = j.at("character_id");
-                                   const int32 shipTypeID  = j.at("ship_type_id");
+            mEsiSession->resolveSolarSystemAsync(location.solarSystemID, [this](auto &&location) {
+                if (location.systemID == currentSystem.systemID) {
+                    return;
+                }
 
-                                   return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
-                               });
+                currentSystem = location;
+                cachedKillmails.clear();
+                cachedKillmails.reserve(3);
+
+                mEsiSession->getKillsInSystemAsync(location.systemID, 3, [&](auto &&killmails) {
+                    for (auto &&km : killmails) {
+                        mEsiSession->resolveKillmailAsync(km.killmailID, km.killmailHash, [&](auto &&killmail) {
+                            const auto  j           = json::parse(killmail.victimJson);
+                            const int32 characterID = j.at("character_id");
+                            const int32 shipTypeID  = j.at("ship_type_id");
+
+                            cachedKillmails.push_back({ std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) });
+                        });
+                    }
+                });
             });
         });
 
