@@ -169,8 +169,13 @@ void eo::refresh_token(TokenData &token)
 
     const auto response = makeHttpRequest(request);
     const json j        = json::parse(response.body);
-    j.at("access_token").get_to(token.accessToken);
-    j.at("refresh_token").get_to(token.refreshToken);
+
+    try {
+        j.at("access_token").get_to(token.accessToken);
+        j.at("refresh_token").get_to(token.refreshToken);
+    } catch (const json::out_of_range &) {
+        throw std::runtime_error(fmt::format("Could not refresh token, reqeust returned {0}", j.dump(4)));
+    }
 
     const auto verifyresult = verify_token(token.accessToken);
     token.expiresOn         = verifyresult.expiresOn;
