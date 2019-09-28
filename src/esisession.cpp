@@ -255,6 +255,50 @@ void eo::EsiSession::resolveSolarSystemAsync(int32 solarSystemID, std::function<
     }
 }
 
+Killmail eo::EsiSession::resolveKillmail(int32 killmailid, const std::string &killmailhash)
+{
+    auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM killmail WHERE id = ? AND hash = ?;");
+    sqlite3_bind_int(stmt.get(), 1, killmailid);
+    sqlite3_bind_text(stmt.get(), 2, killmailhash.c_str(), -1, nullptr);
+    sqlite3_step(stmt.get());
+    if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
+        Killmail km;
+        auto     select = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
+        sqlite3_bind_int(select.get(), 1, killmailid);
+        sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
+        sqlite3_step(select.get());
+        km.killmailID    = killmailid;
+        km.killmailHash  = killmailhash;
+        km.systemID      = sqlite3_column_int(select.get(), 0);
+        km.attackersJson = db::column_get_string(select.get(), 1);
+        km.victimJson    = db::column_get_string(select.get(), 2);
+        return km;
+    } else if (results == 0) {
+        Killmail    km;
+        HttpRequest req;
+        req.hostname = "esi.evetech.net";
+        req.target   = fmt::format("/v1/killmails/{0}/{1}/", killmailid, killmailhash);
+
+        const auto response = makeHttpRequest(std::move(req));
+        const auto j        = json::parse(response.body);
+        km.killmailID       = killmailid;
+        km.killmailHash     = killmailhash;
+        j.at("solar_system_id").get_to(km.systemID);
+        km.attackersJson = j.at("attackers").dump();
+        km.victimJson    = j.at("victim").dump();
+        stmt             = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?)");
+        sqlite3_bind_int(stmt.get(), 1, km.killmailID);
+        sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
+        sqlite3_bind_int(stmt.get(), 3, km.systemID);
+        sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
+        sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
+        sqlite3_step(stmt.get());
+        return km;
+    } else {
+        throw std::runtime_error(fmt::format("Found {0} killmaiml with the id {1} in the database", results, killmailid));
+    }
+}
+
 void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &killmailhash, std::function<void(const Killmail &)> callback)
 {
     auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM killmail WHERE id = ? AND hash = ?;");
@@ -302,7 +346,7 @@ void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &k
     }
 }
 
-std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
+std::vector<ZkbKill> eo::EsiSession::getKillsInSystem(int32 solarsystemid, int limit)
 {
     HttpRequest req;
     req.hostname = "zkillboard.com";
@@ -336,7 +380,41 @@ std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
     return kills;
 }
 
-std::string eo::getTypeName(int32 invtypeid, db::SqliteSPtr mDbConnection)
+void eo::EsiSession::getKillsInSystemAsync(int32 solarsystemid, int limit, std::function<void(const std::vector<esi::ZkbKill> &)> callback)
+{
+    HttpRequest req;
+    req.hostname = "zkillboard.com";
+    req.target   = fmt::format("/api/kills/solarSystemID/{0}/", solarsystemid);
+
+    mIOState->makeAsyncHttpRequest(std::move(req), [limit, callback = std::move(callback)](auto &&response, auto &&) {
+        const auto j = json::parse(response.body);
+
+        std::vector<ZkbKill> kills;
+        kills.reserve(limit);
+        int c = 0;
+        for (auto &&item : j) {
+            if (++c == limit) {
+                break;
+            }
+
+            ZkbKill k;
+            item.at("killmail_id").get_to(k.killmailID);
+            const auto &zkbdata = item.at("zkb");
+            zkbdata.at("hash").get_to(k.killmailHash);
+            zkbdata.at("fittedValue").get_to(k.fittedValue);
+            zkbdata.at("totalValue").get_to(k.totalValue);
+            zkbdata.at("points").get_to(k.points);
+            zkbdata.at("npc").get_to(k.npc);
+            zkbdata.at("solo").get_to(k.solo);
+            zkbdata.at("awox").get_to(k.awox);
+
+            kills.push_back(std::move(k));
+        }
+        callback(kills);
+    });
+}
+
+std::string eo::EsiSession::getTypeName(int32 invtypeid)
 {
     auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM invTypes WHERE typeID = ?;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);

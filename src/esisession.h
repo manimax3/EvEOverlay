@@ -88,6 +88,9 @@ public:
 
     void resolveKillmailAsync(int32 killmailid, const std::string &killmailhash, std::function<void(const esi::Killmail &)> callback);
 
+    std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit);
+    void getKillsInSystemAsync(int32 solarsystemid, int limit, std::function<void(const std::vector<esi::ZkbKill> &)> callback);
+
     std::string getTypeName(int32 invtypeid);
 
     db::SqliteSPtr getDbConnection() const { return mDbConnection; }
