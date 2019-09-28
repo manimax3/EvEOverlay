@@ -28,18 +28,19 @@ eo::SystemInfoWindow::SystemInfoWindow(const std::shared_ptr<EsiSession> &sessio
     , mEsiSession(session)
 {
     cachedKillmails.reserve(3);
-    const auto character_location = mEsiSession->getCharacterLocation();
-    currentSystem                 = mEsiSession->resolveSolarSystem(character_location.solarSystemID);
-    mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [this](auto &&killmails) {
-        std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
-                       [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
-                           const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
-                           const auto  j           = json::parse(km.victimJson);
-                           const int32 characterID = j.at("character_id");
-                           const int32 shipTypeID  = j.at("ship_type_id");
+    mEsiSession->getCharacterLocationAsync([this](auto &&location) {
+        currentSystem = mEsiSession->resolveSolarSystem(location.solarSystemID);
+        mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [this](auto &&killmails) {
+            std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
+                           [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
+                               const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
+                               const auto  j           = json::parse(km.victimJson);
+                               const int32 characterID = j.at("character_id");
+                               const int32 shipTypeID  = j.at("ship_type_id");
 
-                           return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
-                       });
+                               return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
+                           });
+        });
     });
 }
 
@@ -58,7 +59,7 @@ void eo::SystemInfoWindow::fetchNextSystem()
 void eo::SystemInfoWindow::renderImguiContents()
 {
     fetchNextSystem();
-    if (ImGui::CollapsingHeader(currentSystem.name.c_str())) {
+    if (ImGui::CollapsingHeader(currentSystem.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Columns(2);
         ImGui::Text("Name");
         ImGui::NextColumn();
