@@ -25,12 +25,12 @@
 using namespace eo::esi;
 using json = nlohmann::json;
 
-eo::EsiSession::EsiSession(db::SqliteSPtr dbconnection, std::shared_ptr<IOState> iostate)
-    : mDbConnection(std::move(dbconnection))
+eo::EsiSession::EsiSession(db::SqliteSPtr mDbConnection, std::shared_ptr<IOState> iostate)
+    : mDbConnection(mDbConnection)
     , mIOState(std::move(iostate))
 {
     if (!mDbConnection) {
-        throw std::logic_error("EsiSession requries a valid dbconnection");
+        throw std::logic_error("EsiSession requries a valid mDbConnection");
     }
     if (!mIOState) {
         throw std::logic_error("EsiSession requires a valid iostate");
@@ -90,10 +90,65 @@ CharacterLocation eo::EsiSession::getCharacterLocation()
     return location;
 }
 
-SolarSystem eo::resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnection)
+void eo::EsiSession::getCharacterLocationAsync(std::function<void(const CharacterLocation &)> callback)
+{
+    if (token_expired(mCurrentToken)) {
+        refresh_token(mCurrentToken);
+        db::store_in_db(mDbConnection, mCurrentToken);
+    }
+
+    HttpRequest request;
+    request.hostname                            = "esi.evetech.net";
+    request.target                              = fmt::format("/v1/characters/{0}/location/", mCurrentToken.characterID);
+    request.headers[http::field::authorization] = fmt::format("Bearer {0}", mCurrentToken.accessToken);
+
+    mIOState->makeAsyncHttpRequest(request, [callback = std::move(callback)](auto &&response, auto &&) {
+        const auto        j = json::parse(response.body);
+        CharacterLocation location;
+        try {
+            j.at("solar_system_id").get_to(location.solarSystemID);
+        } catch (const json::out_of_range &e) {
+            log::error("Missing solar system id for location retrieval");
+            log::error("{0}", response.body);
+            throw e;
+        }
+
+        // TODO Quite the common case, should not be handled by exception
+        try {
+            j.at("station_id").get_to(location.stationID);
+            j.at("structure_id").get_to(location.structureID);
+        } catch (const json::out_of_range &e) {
+            // Did not contain any staion or structure information
+        }
+
+        callback(location);
+    });
+}
+
+SolarSystem eo::EsiSession::resolveSolarSystem(int32 solarSystemID)
 {
     SolarSystem system;
-    if (!dbconnection) {
+    auto        stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM solarsystem WHERE id = ?;");
+    sqlite3_bind_int(stmt.get(), 1, solarSystemID);
+    sqlite3_step(stmt.get());
+    if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
+        auto select = db::make_statement(mDbConnection, "SELECT * FROM solarsystem WHERE id = ? LIMIT 1;");
+        sqlite3_bind_int(select.get(), 1, solarSystemID);
+        sqlite3_step(select.get());
+
+        system.systemID        = solarSystemID;
+        system.constellationID = sqlite3_column_int(select.get(), 1);
+        system.name            = db::column_get_string(select.get(), 2);
+        system.planetsJson     = db::column_get_string(select.get(), 3);
+        system.positionJson    = db::column_get_string(select.get(), 4);
+        system.securityClass   = db::column_get_string(select.get(), 5);
+        system.securityStatus  = sqlite3_column_double(select.get(), 6);
+        system.starID          = sqlite3_column_int(select.get(), 7);
+        system.stargatesJson   = db::column_get_string(select.get(), 8);
+        system.stationsJson    = db::column_get_string(select.get(), 9);
+        return system;
+
+    } else if (results == 0) {
         HttpRequest request;
         request.hostname = "esi.evetech.net";
         request.target   = fmt::format("/v4/universe/systems/{0}/", solarSystemID);
@@ -114,97 +169,137 @@ SolarSystem eo::resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnect
 
         assert(solarSystemID == system.systemID);
     } else {
-        auto stmt = db::make_statement(dbconnection, "SELECT COUNT(*) FROM solarsystem WHERE id = ?;");
-        sqlite3_bind_int(stmt.get(), 1, solarSystemID);
-        sqlite3_step(stmt.get());
-        if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
-            auto select = db::make_statement(dbconnection, "SELECT * FROM solarsystem WHERE id = ? LIMIT 1;");
-            sqlite3_bind_int(select.get(), 1, solarSystemID);
-            sqlite3_step(select.get());
-
-            system.systemID        = solarSystemID;
-            system.constellationID = sqlite3_column_int(select.get(), 1);
-            system.name            = db::column_get_string(select.get(), 2);
-            system.planetsJson     = db::column_get_string(select.get(), 3);
-            system.positionJson    = db::column_get_string(select.get(), 4);
-            system.securityClass   = db::column_get_string(select.get(), 5);
-            system.securityStatus  = sqlite3_column_double(select.get(), 6);
-            system.starID          = sqlite3_column_int(select.get(), 7);
-            system.stargatesJson   = db::column_get_string(select.get(), 8);
-            system.stationsJson    = db::column_get_string(select.get(), 9);
-            return system;
-
-        } else if (results == 0) {
-            system = eo::resolveSolarSystem(solarSystemID, nullptr);
-        } else {
-            throw std::runtime_error(fmt::format("Found {0} solar systems with the id {1} in the database", results, solarSystemID));
-        }
-
-        // Store the system in the database
-        stmt = db::make_statement(std::move(dbconnection), "INSERT INTO solarsystem VALUES(?,?,?,?,?,?,?,?,?,?)");
-        sqlite3_bind_int(stmt.get(), 1, system.systemID);
-        sqlite3_bind_int(stmt.get(), 2, system.constellationID);
-        sqlite3_bind_text(stmt.get(), 3, system.name.c_str(), -1, nullptr);
-        sqlite3_bind_text(stmt.get(), 4, system.planetsJson.c_str(), -1, nullptr);
-        sqlite3_bind_text(stmt.get(), 5, system.positionJson.c_str(), -1, nullptr);
-        sqlite3_bind_text(stmt.get(), 6, system.securityClass.c_str(), -1, nullptr);
-        sqlite3_bind_double(stmt.get(), 7, system.securityStatus);
-        sqlite3_bind_int(stmt.get(), 8, system.starID);
-        sqlite3_bind_text(stmt.get(), 9, system.stargatesJson.c_str(), -1, nullptr);
-        sqlite3_bind_text(stmt.get(), 10, system.stationsJson.c_str(), -1, nullptr);
-        sqlite3_step(stmt.get());
+        throw std::runtime_error(fmt::format("Found {0} solar systems with the id {1} in the database", results, solarSystemID));
     }
+
+    // Store the system in the database
+    stmt = db::make_statement(mDbConnection, "INSERT INTO solarsystem VALUES(?,?,?,?,?,?,?,?,?,?)");
+    sqlite3_bind_int(stmt.get(), 1, system.systemID);
+    sqlite3_bind_int(stmt.get(), 2, system.constellationID);
+    sqlite3_bind_text(stmt.get(), 3, system.name.c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt.get(), 4, system.planetsJson.c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt.get(), 5, system.positionJson.c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt.get(), 6, system.securityClass.c_str(), -1, nullptr);
+    sqlite3_bind_double(stmt.get(), 7, system.securityStatus);
+    sqlite3_bind_int(stmt.get(), 8, system.starID);
+    sqlite3_bind_text(stmt.get(), 9, system.stargatesJson.c_str(), -1, nullptr);
+    sqlite3_bind_text(stmt.get(), 10, system.stationsJson.c_str(), -1, nullptr);
+    sqlite3_step(stmt.get());
 
     return system;
 }
 
-Killmail eo::resolveKillmail(int32 killmailid, const std::string &killmailhash, db::SqliteSPtr dbconnection)
+void eo::EsiSession::resolveSolarSystemAsync(int32 solarSystemID, std::function<void(const esi::SolarSystem &)> callback)
 {
-    Killmail km;
-    if (!dbconnection) {
+    auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM solarsystem WHERE id = ?;");
+    sqlite3_bind_int(stmt.get(), 1, solarSystemID);
+    sqlite3_step(stmt.get());
+    if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
+        SolarSystem system;
+        auto        select = db::make_statement(mDbConnection, "SELECT * FROM solarsystem WHERE id = ? LIMIT 1;");
+        sqlite3_bind_int(select.get(), 1, solarSystemID);
+        sqlite3_step(select.get());
+
+        system.systemID        = solarSystemID;
+        system.constellationID = sqlite3_column_int(select.get(), 1);
+        system.name            = db::column_get_string(select.get(), 2);
+        system.planetsJson     = db::column_get_string(select.get(), 3);
+        system.positionJson    = db::column_get_string(select.get(), 4);
+        system.securityClass   = db::column_get_string(select.get(), 5);
+        system.securityStatus  = sqlite3_column_double(select.get(), 6);
+        system.starID          = sqlite3_column_int(select.get(), 7);
+        system.stargatesJson   = db::column_get_string(select.get(), 8);
+        system.stationsJson    = db::column_get_string(select.get(), 9);
+        callback(system);
+        return;
+
+    } else if (results == 0) {
+        HttpRequest request;
+        request.hostname = "esi.evetech.net";
+        request.target   = fmt::format("/v4/universe/systems/{0}/", solarSystemID);
+
+        mIOState->makeAsyncHttpRequest(request, [this, solarSystemID, callback = std::move(callback)](auto &&response, auto &&) {
+            SolarSystem system;
+            const auto  j = json::parse(response.body);
+
+            j.at("constellation_id").get_to(system.constellationID);
+            j.at("name").get_to(system.name);
+            system.planetsJson  = j.at("planets").dump();
+            system.positionJson = j.at("position").dump();
+            j.at("security_class").get_to(system.securityClass);
+            j.at("security_status").get_to(system.securityStatus);
+            j.at("star_id").get_to(system.starID);
+            system.stargatesJson = j.at("stargates").dump();
+            system.stationsJson  = j.at("stations").dump();
+            j.at("system_id").get_to(system.systemID);
+
+            assert(solarSystemID == system.systemID);
+            callback(system);
+
+            // Store the system in the database
+            auto stmt = db::make_statement(mDbConnection, "INSERT INTO solarsystem VALUES(?,?,?,?,?,?,?,?,?,?)");
+            sqlite3_bind_int(stmt.get(), 1, system.systemID);
+            sqlite3_bind_int(stmt.get(), 2, system.constellationID);
+            sqlite3_bind_text(stmt.get(), 3, system.name.c_str(), -1, nullptr);
+            sqlite3_bind_text(stmt.get(), 4, system.planetsJson.c_str(), -1, nullptr);
+            sqlite3_bind_text(stmt.get(), 5, system.positionJson.c_str(), -1, nullptr);
+            sqlite3_bind_text(stmt.get(), 6, system.securityClass.c_str(), -1, nullptr);
+            sqlite3_bind_double(stmt.get(), 7, system.securityStatus);
+            sqlite3_bind_int(stmt.get(), 8, system.starID);
+            sqlite3_bind_text(stmt.get(), 9, system.stargatesJson.c_str(), -1, nullptr);
+            sqlite3_bind_text(stmt.get(), 10, system.stationsJson.c_str(), -1, nullptr);
+            sqlite3_step(stmt.get());
+        });
+    } else {
+        throw std::runtime_error(fmt::format("Found {0} solar systems with the id {1} in the database", results, solarSystemID));
+    }
+}
+
+void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &killmailhash, std::function<void(const Killmail &)> callback)
+{
+    auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM killmail WHERE id = ? AND hash = ?;");
+    sqlite3_bind_int(stmt.get(), 1, killmailid);
+    sqlite3_bind_text(stmt.get(), 2, killmailhash.c_str(), -1, nullptr);
+    sqlite3_step(stmt.get());
+    if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
+        Killmail km;
+        auto     select = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
+        sqlite3_bind_int(select.get(), 1, killmailid);
+        sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
+        sqlite3_step(select.get());
+        km.killmailID    = killmailid;
+        km.killmailHash  = killmailhash;
+        km.systemID      = sqlite3_column_int(select.get(), 0);
+        km.attackersJson = db::column_get_string(select.get(), 1);
+        km.victimJson    = db::column_get_string(select.get(), 2);
+        callback(km);
+    } else if (results == 0) {
         HttpRequest req;
         req.hostname = "esi.evetech.net";
         req.target   = fmt::format("/v1/killmails/{0}/{1}/", killmailid, killmailhash);
 
-        const auto response = makeHttpRequest(std::move(req));
-        const auto j        = json::parse(response.body);
-        km.killmailID       = killmailid;
-        km.killmailHash     = killmailhash;
-        j.at("solar_system_id").get_to(km.systemID);
-        km.attackersJson = j.at("attackers").dump();
-        km.victimJson    = j.at("victim").dump();
+        mIOState->makeAsyncHttpRequest(
+            std::move(req),
+            [this, killmailhash = std::move(killmailhash), killmailid, callback = std::move(callback)](auto &&response, auto &&) {
+                Killmail   km;
+                const auto j    = json::parse(response.body);
+                km.killmailID   = killmailid;
+                km.killmailHash = killmailhash;
+                j.at("solar_system_id").get_to(km.systemID);
+                km.attackersJson = j.at("attackers").dump();
+                km.victimJson    = j.at("victim").dump();
+                callback(km);
+                auto stmt = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?)");
+                sqlite3_bind_int(stmt.get(), 1, km.killmailID);
+                sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
+                sqlite3_bind_int(stmt.get(), 3, km.systemID);
+                sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
+                sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
+                sqlite3_step(stmt.get());
+            });
     } else {
-        auto stmt = db::make_statement(dbconnection, "SELECT COUNT(*) FROM killmail WHERE id = ? AND hash = ?;");
-        sqlite3_bind_int(stmt.get(), 1, killmailid);
-        sqlite3_bind_text(stmt.get(), 2, killmailhash.c_str(), -1, nullptr);
-        sqlite3_step(stmt.get());
-        if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
-            auto select = db::make_statement(dbconnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
-            sqlite3_bind_int(select.get(), 1, killmailid);
-            sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
-            sqlite3_step(select.get());
-            km.killmailID    = killmailid;
-            km.killmailHash  = killmailhash;
-            km.systemID      = sqlite3_column_int(select.get(), 0);
-            km.attackersJson = db::column_get_string(select.get(), 1);
-            km.victimJson    = db::column_get_string(select.get(), 2);
-            return km;
-        } else if (results == 0) {
-            km = eo::resolveKillmail(killmailid, killmailhash, nullptr);
-        } else {
-            throw std::runtime_error(fmt::format("Found {0} killmaiml with the id {1} in the database", results, killmailid));
-        }
-
-        stmt = db::make_statement(std::move(dbconnection), "INSERT INTO killmail VALUES(?,?,?,?,?)");
-        sqlite3_bind_int(stmt.get(), 1, km.killmailID);
-        sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
-        sqlite3_bind_int(stmt.get(), 3, km.systemID);
-        sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
-        sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
-        sqlite3_step(stmt.get());
+        throw std::runtime_error(fmt::format("Found {0} killmaiml with the id {1} in the database", results, killmailid));
     }
-
-    return km;
 }
 
 std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
@@ -241,16 +336,16 @@ std::vector<ZkbKill> eo::getKillsInSystem(int32 solarsystemid, int limit)
     return kills;
 }
 
-std::string eo::getTypeName(int32 invtypeid, db::SqliteSPtr dbconnection)
+std::string eo::getTypeName(int32 invtypeid, db::SqliteSPtr mDbConnection)
 {
-    auto stmt = db::make_statement(dbconnection, "SELECT COUNT(*) FROM invTypes WHERE typeID = ?;");
+    auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM invTypes WHERE typeID = ?;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);
     sqlite3_step(stmt.get());
     if (sqlite3_column_int(stmt.get(), 0) != 1) {
         return fmt::format("INVALID - {0}", invtypeid); // This function should be frontend only anyway
     }
 
-    stmt = db::make_statement(std::move(dbconnection), "SELECT typeName FROM invTypes WHERE typeid = ? LIMIT 1;");
+    stmt = db::make_statement(mDbConnection, "SELECT typeName FROM invTypes WHERE typeid = ? LIMIT 1;");
     sqlite3_bind_int(stmt.get(), 1, invtypeid);
     sqlite3_step(stmt.get());
     return db::column_get_string(stmt.get(), 0);

@@ -75,11 +75,18 @@ public:
     // TODO No mutly character support here
     explicit EsiSession(db::SqliteSPtr dbconnection, std::shared_ptr<IOState> iostate);
 
+    // Looks up in the database if no entry then does and http request
     esi::CharacterLocation getCharacterLocation();
+
+    void getCharacterLocationAsync(std::function<void(const esi::CharacterLocation &)> callback);
 
     esi::SolarSystem resolveSolarSystem(int32 soalarSystemID);
 
+    void resolveSolarSystemAsync(int32 soalarSystemID, std::function<void(const esi::SolarSystem &)> callback);
+
     esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash);
+
+    void resolveKillmailAsync(int32 killmailid, const std::string &killmailhash, std::function<void(const esi::Killmail &)> callback);
 
     std::string getTypeName(int32 invtypeid);
 
