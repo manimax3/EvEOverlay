@@ -29,17 +29,18 @@ eo::SystemInfoWindow::SystemInfoWindow(const std::shared_ptr<EsiSession> &sessio
 {
     cachedKillmails.reserve(3);
     const auto character_location = mEsiSession->getCharacterLocation();
-    currentSystem                 = resolveSolarSystem(character_location.solarSystemID, mEsiSession->getDbConnection());
-    const auto killmails          = getKillsInSystem(currentSystem.systemID, 3);
-    std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
-                   [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
-                       const auto  km          = resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash, session->getDbConnection());
-                       const auto  j           = json::parse(km.victimJson);
-                       const int32 characterID = j.at("character_id");
-                       const int32 shipTypeID  = j.at("ship_type_id");
+    currentSystem                 = mEsiSession->resolveSolarSystem(character_location.solarSystemID);
+    mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [this](auto &&killmails) {
+        std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
+                       [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
+                           const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
+                           const auto  j           = json::parse(km.victimJson);
+                           const int32 characterID = j.at("character_id");
+                           const int32 shipTypeID  = j.at("ship_type_id");
 
-                       return { std::to_string(characterID), getTypeName(shipTypeID, session->getDbConnection()) };
-                   });
+                           return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
+                       });
+    });
 }
 
 void eo::SystemInfoWindow::fetchNextSystem()
@@ -47,7 +48,7 @@ void eo::SystemInfoWindow::fetchNextSystem()
     if ((std::chrono::steady_clock::now() - lastCheck) > refresh_system) {
         const auto character_location = mEsiSession->getCharacterLocation();
         if (character_location.solarSystemID != currentSystem.systemID) {
-            currentSystem = resolveSolarSystem(character_location.solarSystemID, mEsiSession->getDbConnection());
+            currentSystem = mEsiSession->resolveSolarSystem(character_location.solarSystemID);
         }
 
         lastCheck = std::chrono::steady_clock::now();
