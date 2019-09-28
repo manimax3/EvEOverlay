@@ -25,13 +25,13 @@
 namespace eo {
 class SystemInfoWindow : public ImguiWindow {
 public:
-    constexpr static auto refresh_system = std::chrono::seconds(30);
-    explicit SystemInfoWindow(const std::shared_ptr<EsiSession> &esisession);
+    constexpr static auto refresh_system = std::chrono::seconds(10);
+    explicit SystemInfoWindow(std::shared_ptr<EsiSession> esisession);
 
 protected:
     void renderImguiContents() override;
 
-    void fetchNextSystem();
+    void fetchNextSystem(bool now = false);
 
 private:
     esi::SolarSystem                      currentSystem{};

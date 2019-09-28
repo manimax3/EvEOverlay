@@ -119,7 +119,12 @@ private:
 };
 }
 
-eo::IOState::IOState() { mIoContext = std::make_shared<net::io_context>(); }
+eo::IOState::IOState()
+	: mIoContext(std::make_shared<net::io_context>()),
+	workGuard(net::make_work_guard(*mIoContext))
+
+{
+}
 
 void eo::IOState::pollIoC() { mIoContext->poll(); }
 

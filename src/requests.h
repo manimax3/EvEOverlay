@@ -20,6 +20,8 @@
 #include <memory>
 #include <variant>
 
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/beast/http/field.hpp>
 
 namespace boost::asio {
@@ -47,6 +49,7 @@ public:
 
 private:
     std::shared_ptr<net::io_context> mIoContext;
+    net::executor_work_guard<net::io_context::executor_type> workGuard;
 };
 
 void        open_url_browser(const std::string &url);

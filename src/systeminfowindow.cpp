@@ -23,34 +23,31 @@
 
 using json = nlohmann::json;
 
-eo::SystemInfoWindow::SystemInfoWindow(const std::shared_ptr<EsiSession> &session)
+eo::SystemInfoWindow::SystemInfoWindow(std::shared_ptr<EsiSession> session)
     : ImguiWindow(256, 256, "SystemInfoWindow", 0, 0)
     , mEsiSession(session)
 {
     cachedKillmails.reserve(3);
-    mEsiSession->getCharacterLocationAsync([this](auto &&location) {
-        currentSystem = mEsiSession->resolveSolarSystem(location.solarSystemID);
-        mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [this](auto &&killmails) {
-            std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
-                           [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
-                               const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
-                               const auto  j           = json::parse(km.victimJson);
-                               const int32 characterID = j.at("character_id");
-                               const int32 shipTypeID  = j.at("ship_type_id");
-
-                               return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
-                           });
-        });
-    });
+    fetchNextSystem(true);
 }
 
-void eo::SystemInfoWindow::fetchNextSystem()
+void eo::SystemInfoWindow::fetchNextSystem(bool now)
 {
-    if ((std::chrono::steady_clock::now() - lastCheck) > refresh_system) {
-        const auto character_location = mEsiSession->getCharacterLocation();
-        if (character_location.solarSystemID != currentSystem.systemID) {
-            currentSystem = mEsiSession->resolveSolarSystem(character_location.solarSystemID);
-        }
+    if ((std::chrono::steady_clock::now() - lastCheck) > refresh_system || now) {
+        mEsiSession->getCharacterLocationAsync([this](auto &&location) {
+            currentSystem = mEsiSession->resolveSolarSystem(location.solarSystemID);
+            mEsiSession->getKillsInSystemAsync(currentSystem.systemID, 3, [&](auto &&killmails) {
+                std::transform(begin(killmails), end(killmails), std::back_inserter(cachedKillmails),
+                               [&](const auto &zkbkm) -> std::tuple<std::string, std::string> {
+                                   const auto  km          = mEsiSession->resolveKillmail(zkbkm.killmailID, zkbkm.killmailHash);
+                                   const auto  j           = json::parse(km.victimJson);
+                                   const int32 characterID = j.at("character_id");
+                                   const int32 shipTypeID  = j.at("ship_type_id");
+
+                                   return { std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) };
+                               });
+            });
+        });
 
         lastCheck = std::chrono::steady_clock::now();
     }
