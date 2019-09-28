@@ -17,6 +17,7 @@
 #pragma once
 #include "authentication.h"
 #include "db.h"
+#include "requests.h"
 
 #include <vector>
 
@@ -72,11 +73,18 @@ class EsiSession {
 public:
     // Loads the token or make the authentication routine
     // TODO No mutly character support here
-    explicit EsiSession(db::SqliteSPtr dbconnection = db::make_database_connection());
+    explicit EsiSession(db::SqliteSPtr dbconnection, std::shared_ptr<IOState> iostate);
 
     esi::CharacterLocation getCharacterLocation();
 
+    esi::SolarSystem resolveSolarSystem(int32 soalarSystemID);
+
+    esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash);
+
+    std::string getTypeName(int32 invtypeid);
+
     db::SqliteSPtr getDbConnection() const { return mDbConnection; }
+    IOState &      getIOState() { return *mIOState; }
 
 private:
     // Make sure this is alwasys valid
@@ -85,18 +93,7 @@ private:
 
     // We keep a connection alive
     db::SqliteSPtr mDbConnection;
+
+    std::shared_ptr<IOState> mIOState;
 };
-
-/*
- * Resolve a solarsystemid.
- * if dbconnection is privided trys to load the solarsystem from there and/or stores it there after make the
- * esi resolve request
- */
-esi::SolarSystem resolveSolarSystem(int32 solarSystemID, db::SqliteSPtr dbconnection = {});
-
-esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash, db::SqliteSPtr dbconnection = {});
-
-std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit = 3);
-
-std::string getTypeName(int32 invtypedid, db::SqliteSPtr dbconnection = {});
 }

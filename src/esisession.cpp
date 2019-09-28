@@ -25,11 +25,15 @@
 using namespace eo::esi;
 using json = nlohmann::json;
 
-eo::EsiSession::EsiSession(db::SqliteSPtr dbconnection)
+eo::EsiSession::EsiSession(db::SqliteSPtr dbconnection, std::shared_ptr<IOState> iostate)
     : mDbConnection(std::move(dbconnection))
+    , mIOState(std::move(iostate))
 {
     if (!mDbConnection) {
         throw std::logic_error("EsiSession requries a valid dbconnection");
+    }
+    if (!mIOState) {
+        throw std::logic_error("EsiSession requires a valid iostate");
     }
 
     TokenData token;
@@ -70,9 +74,9 @@ CharacterLocation eo::EsiSession::getCharacterLocation()
     try {
         j.at("solar_system_id").get_to(location.solarSystemID);
     } catch (const json::out_of_range &e) {
-		log::error("Missing solar system id for location retrieval");
+        log::error("Missing solar system id for location retrieval");
         log::error("{0}", response.body);
-		throw e;
+        throw e;
     }
 
     // TODO Quite the common case, should not be handled by exception
