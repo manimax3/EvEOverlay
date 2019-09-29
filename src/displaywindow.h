@@ -41,13 +41,13 @@ public:
     explicit DisplayWindow(int width, int height, std::string name, int posx, int posy);
     virtual ~DisplayWindow();
 
-    bool shouldWindowClose() const;
+    [[nodiscard]] bool shouldWindowClose() const;
 
     void frame();
 
-    math::vec2  getFramebufferSize() const;
-    void        setClipboard(const char *content);
-    const char *getClipboard() const;
+    [[nodiscard]] math::vec2  getFramebufferSize() const;
+    void                      setClipboard(const char *content);
+    [[nodiscard]] const char *getClipboard() const;
 
 protected:
     virtual void renderContents();

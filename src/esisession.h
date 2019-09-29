@@ -73,7 +73,7 @@ class EsiSession {
 public:
     // Loads the token or make the authentication routine
     // TODO No mutly character support here
-    explicit EsiSession(db::SqliteSPtr dbconnection, std::shared_ptr<IOState> iostate);
+    explicit EsiSession(const db::SqliteSPtr &dbconnection, std::shared_ptr<IOState> iostate);
 
     // Looks up in the database if no entry then does and http request
     esi::CharacterLocation getCharacterLocation();
@@ -93,8 +93,8 @@ public:
 
     std::string getTypeName(int32 invtypeid);
 
-    db::SqliteSPtr getDbConnection() const { return mDbConnection; }
-    IOState &      getIOState() { return *mIOState; }
+    [[nodiscard]] db::SqliteSPtr getDbConnection() const { return mDbConnection; }
+    IOState &                    getIOState() { return *mIOState; }
 
 private:
     // Make sure this is alwasys valid

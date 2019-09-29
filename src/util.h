@@ -42,7 +42,7 @@ struct scope_exit {
         : f_(f)
     {
     }
-    ~scope_exit(void) { f_(); }
+    ~scope_exit() { f_(); }
 
 private:
     F f_;

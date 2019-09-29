@@ -133,7 +133,7 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
             int32 ivalue = ie.at("typeID");
             sqlite3_bind_int(sqlstmt, ++col, ivalue);
 
-            std::string_view value = ie.at("groupID").get<std::string_view>();
+            auto value = ie.at("groupID").get<std::string_view>();
             sqlite3_bind_text(sqlstmt, ++col, value.data(), value.length(), nullptr);
 
             value = ie.at("typeName").get<std::string_view>();
@@ -239,7 +239,7 @@ json parse_invtypes_assetfile()
     std::vector<uint8_t>  output_buffer;
 
     {
-        std::array<uint8_t, chunksize> output;
+        std::array<uint8_t, chunksize> output{};
         z_stream                       stream;
         stream.zalloc = Z_NULL;
         stream.zfree  = Z_NULL;

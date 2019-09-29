@@ -25,7 +25,7 @@
 using namespace eo::esi;
 using json = nlohmann::json;
 
-eo::EsiSession::EsiSession(db::SqliteSPtr mDbConnection, std::shared_ptr<IOState> iostate)
+eo::EsiSession::EsiSession(const db::SqliteSPtr &mDbConnection, std::shared_ptr<IOState> iostate)
     : mDbConnection(mDbConnection)
     , mIOState(std::move(iostate))
 {
@@ -70,7 +70,7 @@ CharacterLocation eo::EsiSession::getCharacterLocation()
     const auto response                         = makeHttpRequest(request);
     const auto j                                = json::parse(response.body);
 
-    CharacterLocation location;
+    CharacterLocation location{};
     try {
         j.at("solar_system_id").get_to(location.solarSystemID);
     } catch (const json::out_of_range &e) {
@@ -104,7 +104,7 @@ void eo::EsiSession::getCharacterLocationAsync(std::function<void(const Characte
 
     mIOState->makeAsyncHttpRequest(request, [callback = std::move(callback)](auto &&response, auto &&) {
         const auto        j = json::parse(response.body);
-        CharacterLocation location;
+        CharacterLocation location{};
         try {
             j.at("solar_system_id").get_to(location.solarSystemID);
         } catch (const json::out_of_range &e) {
@@ -279,7 +279,7 @@ Killmail eo::EsiSession::resolveKillmail(int32 killmailid, const std::string &ki
         req.hostname = "esi.evetech.net";
         req.target   = fmt::format("/v1/killmails/{0}/{1}/", killmailid, killmailhash);
 
-        const auto response = makeHttpRequest(std::move(req));
+        const auto response = makeHttpRequest(req);
         const auto j        = json::parse(response.body);
         km.killmailID       = killmailid;
         km.killmailHash     = killmailhash;
@@ -323,8 +323,7 @@ void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &k
         req.target   = fmt::format("/v1/killmails/{0}/{1}/", killmailid, killmailhash);
 
         mIOState->makeAsyncHttpRequest(
-            std::move(req),
-            [this, killmailhash = std::move(killmailhash), killmailid, callback = std::move(callback)](auto &&response, auto &&) {
+            req, [this, killmailhash = killmailhash, killmailid, callback = std::move(callback)](auto &&response, auto &&) {
                 Killmail   km;
                 const auto j    = json::parse(response.body);
                 km.killmailID   = killmailid;
@@ -352,7 +351,7 @@ std::vector<ZkbKill> eo::EsiSession::getKillsInSystem(int32 solarsystemid, int l
     req.hostname = "zkillboard.com";
     req.target   = fmt::format("/api/kills/solarSystemID/{0}/", solarsystemid);
 
-    const auto response = makeHttpRequest(std::move(req));
+    const auto response = makeHttpRequest(req);
     const auto j        = json::parse(response.body);
 
     std::vector<ZkbKill> kills;
@@ -386,7 +385,7 @@ void eo::EsiSession::getKillsInSystemAsync(int32 solarsystemid, int limit, std::
     req.hostname = "zkillboard.com";
     req.target   = fmt::format("/api/kills/solarSystemID/{0}/", solarsystemid);
 
-    mIOState->makeAsyncHttpRequest(std::move(req), [limit, callback = std::move(callback)](auto &&response, auto &&) {
+    mIOState->makeAsyncHttpRequest(req, [limit, callback = std::move(callback)](auto &&response, auto &&) {
         const auto j = json::parse(response.body);
 
         std::vector<ZkbKill> kills;

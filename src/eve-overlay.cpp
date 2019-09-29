@@ -32,9 +32,9 @@ using json = nlohmann::json;
 int main()
 {
     eo::scope_exit exit([] { terminateGlfw(); });
-    auto iostate = std::make_shared<eo::IOState>();
-    auto conn    = eo::db::make_database_connection();
-    auto session = std::make_shared<eo::EsiSession>(conn, iostate);
+    auto           iostate = std::make_shared<eo::IOState>();
+    auto           conn    = eo::db::make_database_connection();
+    auto           session = std::make_shared<eo::EsiSession>(conn, iostate);
 
     eo::SystemInfoWindow window(session);
 

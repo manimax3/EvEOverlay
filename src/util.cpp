@@ -26,7 +26,7 @@
 std::string eo::get_cwd()
 {
 #ifdef __linux__
-    std::array<char, 512> data;
+    std::array<char, 512> data{};
     std::memset(data.data(), 0, 512);
     getcwd(data.data(), 512);
     return data.data();
@@ -38,7 +38,7 @@ std::string eo::get_cwd()
 std::string eo::get_exe_dir()
 {
 #ifdef __linux__
-    std::array<char, 512> data;
+    std::array<char, 512> data{};
     std::memset(data.data(), 0, 512);
     readlink("/proc/self/exe", data.data(), 512);
     std::string path(data.data());

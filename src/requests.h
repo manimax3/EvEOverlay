@@ -48,7 +48,7 @@ public:
     void makeAsyncHttpRequest(const struct HttpRequest &request, std::function<void(const struct HttpResponse &, IOState &)> callback);
 
 private:
-    std::shared_ptr<net::io_context> mIoContext;
+    std::shared_ptr<net::io_context>                         mIoContext;
     net::executor_work_guard<net::io_context::executor_type> workGuard;
 };
 
@@ -66,7 +66,7 @@ struct HttpRequest {
     enum Type { GET, POST };
     std::string hostname;
     Type        requestType = GET;
-    std::string target = "/";
+    std::string target      = "/";
     FieldMap    headers{};
     std::string body = {};
     std::string port = "443";

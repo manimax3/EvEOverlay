@@ -47,14 +47,14 @@ public:
                                 beast::bind_front_handler(&AsyncHttpRequest::on_resolve, shared_from_this()));
     }
 
-    void on_resolve(beast::error_code ec, tcp::resolver::results_type results)
+    void on_resolve(beast::error_code ec, const tcp::resolver::results_type &results)
     {
         beast::get_lowest_layer(mStream).expires_after(std::chrono::seconds(30));
         beast::get_lowest_layer(mStream).async_connect(results,
                                                        beast::bind_front_handler(&AsyncHttpRequest::on_connect, shared_from_this()));
     }
 
-    void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type)
+    void on_connect(beast::error_code ec, const tcp::resolver::results_type::endpoint_type &)
     {
         mStream.async_handshake(ssl::stream_base::client, beast::bind_front_handler(&AsyncHttpRequest::on_handshake, shared_from_this()));
     }
@@ -120,8 +120,8 @@ private:
 }
 
 eo::IOState::IOState()
-	: mIoContext(std::make_shared<net::io_context>()),
-	workGuard(net::make_work_guard(*mIoContext))
+    : mIoContext(std::make_shared<net::io_context>())
+    , workGuard(net::make_work_guard(*mIoContext))
 
 {
 }

@@ -79,7 +79,7 @@ std::string eo::make_authorize_request(std::list<std::string> scopes)
 
     const auto code_challenge = base64_safe(base64_encode((byte *)random_string(32).c_str(), 32));
 
-    std::array<byte, 32> sha_output;
+    std::array<byte, 32> sha_output{};
     SHA256((byte *)code_challenge.data(), code_challenge.length(), sha_output.data());
 
     out << "&code_challenge=" << base64_safe(base64_encode(sha_output.data(), 32));

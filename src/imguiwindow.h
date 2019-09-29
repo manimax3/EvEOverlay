@@ -23,7 +23,7 @@ namespace eo {
 class ImguiWindow : public DisplayWindow {
 public:
     explicit ImguiWindow(int width, int height, std::string name, int xpos, int ypos);
-    ~ImguiWindow();
+    ~ImguiWindow() override;
 
 protected:
     void         renderContents() override;
@@ -36,9 +36,9 @@ protected:
 
 private:
     ImGuiContext *mContext = nullptr;
-    uint          mVbo, mIbo, mVao, mFontTexture;
+    uint          mVbo{}, mIbo{}, mVao{}, mFontTexture{};
     uint          mShaderProgram;
 
-    double     mLastFrame = 0.0;
+    double mLastFrame = 0.0;
 };
 }

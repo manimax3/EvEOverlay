@@ -65,7 +65,7 @@ eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int po
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-    mWindow = glfwCreateWindow(width, height, mName.c_str(), NULL, NULL);
+    mWindow = glfwCreateWindow(width, height, mName.c_str(), nullptr, nullptr);
 
     if (!mWindow) {
         log::error("Could not create a valid window");

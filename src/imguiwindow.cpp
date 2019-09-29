@@ -148,11 +148,11 @@ eo::ImguiWindow::ImguiWindow(int width, int height, std::string name, int xpos, 
 
     {
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertex_shader, NULL);
+        glShaderSource(vertexShader, 1, &vertex_shader, nullptr);
         glCompileShader(vertexShader);
 
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragment_shader, NULL);
+        glShaderSource(fragmentShader, 1, &fragment_shader, nullptr);
         glCompileShader(fragmentShader);
 
         mShaderProgram = glCreateProgram();
@@ -222,7 +222,7 @@ void eo::ImguiWindow::renderContents()
     ImGui::NewFrame();
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y));
     ImGui::SetNextWindowPos({ 0.f, 0.f });
-    ImGui::Begin(mName.c_str(), NULL, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin(mName.c_str(), nullptr, ImGuiWindowFlags_NoDecoration & ~ImGuiWindowFlags_NoScrollbar);
     renderImguiContents();
     ImGui::End();
     ImGui::EndFrame();
@@ -287,7 +287,7 @@ void eo::ImguiWindow::renderContents()
 
 void eo::ImguiWindow::keyboardInput(int key, int scancode, int action, int mods)
 {
-	boost::ignore_unused(scancode);
+    boost::ignore_unused(scancode);
 
     if (mods & GLFW_MOD_CONTROL && key == GLFW_KEY_B && action == GLFW_PRESS) {
         // FIXME Doesnt work see: https://github.com/glfw/glfw/issues/1566

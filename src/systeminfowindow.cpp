@@ -20,12 +20,13 @@
 
 #include <algorithm>
 #include <nlohmann/json.hpp>
+#include <utility>
 
 using json = nlohmann::json;
 
 eo::SystemInfoWindow::SystemInfoWindow(std::shared_ptr<EsiSession> session)
     : ImguiWindow(256, 256, "SystemInfoWindow", 0, 0)
-    , mEsiSession(session)
+    , mEsiSession(std::move(std::move(session)))
 {
     cachedKillmails.reserve(3);
     fetchNextSystem(true);
@@ -51,7 +52,7 @@ void eo::SystemInfoWindow::fetchNextSystem(bool now)
                             const int32 characterID = j.at("character_id");
                             const int32 shipTypeID  = j.at("ship_type_id");
 
-                            cachedKillmails.push_back({ std::to_string(characterID), mEsiSession->getTypeName(shipTypeID) });
+                            cachedKillmails.emplace_back(std::to_string(characterID), mEsiSession->getTypeName(shipTypeID));
                         });
                     }
                 });
