@@ -19,6 +19,8 @@
 #include <string>
 #include <string_view>
 
+#include <boost/core/ignore_unused.hpp>
+
 namespace eo {
 using int32  = std::int32_t;
 using uint   = unsigned int;
@@ -33,4 +35,16 @@ std::string get_exe_dir();
 constexpr const char *data_folder        = "data/";
 constexpr const char *settings_file      = "settings.json";
 inline const auto     settings_file_path = get_exe_dir() + data_folder + settings_file;
+
+template<typename F>
+struct scope_exit {
+    scope_exit(F f)
+        : f_(f)
+    {
+    }
+    ~scope_exit(void) { f_(); }
+
+private:
+    F f_;
+};
 }

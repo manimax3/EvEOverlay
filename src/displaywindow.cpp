@@ -34,7 +34,7 @@ bool initGlfw()
 
     return init;
 }
-
+}
 void terminateGlfw()
 {
     static bool terminated = false;
@@ -43,13 +43,14 @@ void terminateGlfw()
         terminated = true;
     }
 }
-}
 
 void eo::DisplayWindow::pollEvents() { glfwPollEvents(); }
 
 eo::DisplayWindow::DisplayWindow(int width, int height, std::string name, int posx, int posy)
-	: mName(std::move(name))
+    : mName(std::move(name))
 {
+    boost::ignore_unused(posx, posy);
+
     log::info("Creating a new window {0}", name);
 
     if (!initGlfw()) {

@@ -31,8 +31,9 @@ using json = nlohmann::json;
 
 int main()
 {
-    auto conn    = eo::db::make_database_connection();
-    auto session = std::make_shared<eo::EsiSession>(conn);
+    eo::scope_exit exit([] { terminateGlfw(); });
+    auto           conn    = eo::db::make_database_connection();
+    auto           session = std::make_shared<eo::EsiSession>(conn);
 
     /* const auto location = session->getCharacterLocation(); */
     /* const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn); */

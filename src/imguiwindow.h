@@ -40,6 +40,5 @@ private:
     uint          mShaderProgram;
 
     double     mLastFrame = 0.0;
-    math::vec2 mLastCursorPos;
 };
 }

@@ -52,17 +52,20 @@ public:
 protected:
     virtual void renderContents();
 
-    virtual void keyboardInput(int key, int scancode, int action, int mods) {}
-    virtual void characterInput(unsigned int codepoint) {}
-    virtual void cursorInput(double xpos, double ypos) {}
-    virtual void cursorenterInput(int entered) {}
-    virtual void mousebuttonInput(int button, int action, int mods) {}
-    virtual void scrollInput(double xoffset, double yoffset) {}
+    virtual void keyboardInput(int key, int scancode, int action, int mods) { boost::ignore_unused(key, scancode, action, mods); }
+    virtual void characterInput(unsigned int codepoint) { boost::ignore_unused(codepoint); }
+    virtual void cursorInput(double xpos, double ypos) { boost::ignore_unused(xpos, ypos); }
+    virtual void cursorenterInput(int entered) { boost::ignore_unused(entered); }
+    virtual void mousebuttonInput(int button, int action, int mods) { boost::ignore_unused(button, action, mods); }
+    virtual void scrollInput(double xoffset, double yoffset) { boost::ignore_unused(xoffset, yoffset); }
 
-    virtual void onFramebufferResize(int widht, int height) {}
+    virtual void onFramebufferResize(int width, int height) { boost::ignore_unused(width, height); }
     void         framebufferResizeCallback(int width, int height);
 
     GLFWwindow *mWindow = nullptr;
-	std::string mName;
+    std::string mName;
 };
+
 }
+
+void terminateGlfw();

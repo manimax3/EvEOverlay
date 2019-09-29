@@ -287,6 +287,8 @@ void eo::ImguiWindow::renderContents()
 
 void eo::ImguiWindow::keyboardInput(int key, int scancode, int action, int mods)
 {
+	boost::ignore_unused(scancode);
+
     if (mods & GLFW_MOD_CONTROL && key == GLFW_KEY_B && action == GLFW_PRESS) {
         // FIXME Doesnt work see: https://github.com/glfw/glfw/issues/1566
         glfwSetWindowAttrib(mWindow, GLFW_DECORATED, glfwGetWindowAttrib(mWindow, GLFW_DECORATED) == GLFW_TRUE ? GLFW_FALSE : GLFW_TRUE);
