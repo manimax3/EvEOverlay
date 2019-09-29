@@ -161,7 +161,7 @@ void eo::refresh_token(TokenData &token)
 {
     HttpRequest request;
     request.hostname                           = eve_baseurl;
-    request.target                             = "/v2/oauth/token";
+    request.target                             = "/v2/oauth/token/";
     request.requestType                        = HttpRequest::POST;
     request.headers[http::field::content_type] = "application/x-www-form-urlencoded";
     request.body = fmt::format("grant_type=refresh_token&refresh_token={0}&client_id={1}&code_verifier={2}", token.refreshToken, client_id,

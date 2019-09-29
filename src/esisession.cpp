@@ -45,6 +45,8 @@ eo::EsiSession::EsiSession(const db::SqliteSPtr &mDbConnection, std::shared_ptr<
             db::store_in_db(mDbConnection, token);
         }
     } catch (const std::runtime_error &re) {
+        log::error("{0}", re.what());
+        log::info("Trying to retrieve a new auth token");
         const auto cc = make_authorize_request({ "esi-location.read_location.v1" });
         const auto ac = handle_redirect();
         const auto tr = make_token_request(ac, cc);
