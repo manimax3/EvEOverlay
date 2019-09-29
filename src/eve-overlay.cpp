@@ -32,18 +32,16 @@ using json = nlohmann::json;
 int main()
 {
     eo::scope_exit exit([] { terminateGlfw(); });
-    auto           conn    = eo::db::make_database_connection();
-    auto           session = std::make_shared<eo::EsiSession>(conn);
+    auto iostate = std::make_shared<eo::IOState>();
+    auto conn    = eo::db::make_database_connection();
+    auto session = std::make_shared<eo::EsiSession>(conn, iostate);
 
-    /* const auto location = session->getCharacterLocation(); */
-    /* const auto system   = eo::resolveSolarSystem(location.solarSystemID, conn); */
-
-    /* eo::log::info("System name {0}", system.name); */
     eo::SystemInfoWindow window(session);
 
     while (!window.shouldWindowClose()) {
         window.pollEvents();
         window.frame();
+        iostate->pollIoC();
     }
 
     return 0;

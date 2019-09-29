@@ -17,9 +17,16 @@
 #pragma once
 #include "util.h"
 #include <map>
+#include <memory>
 #include <variant>
 
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/beast/http/field.hpp>
+
+namespace boost::asio {
+struct io_context;
+}
 
 namespace eo {
 
@@ -28,6 +35,22 @@ namespace beast = boost::beast;
 namespace http  = beast::http;
 namespace net   = boost::asio;
 using FieldMap  = std::map<std::variant<http::field, std::string>, std::string>;
+
+class IOState {
+public:
+    IOState();
+
+    inline auto &getIoC() { return mIoContext; }
+
+    void pollIoC();
+    void runIoC();
+
+    void makeAsyncHttpRequest(const struct HttpRequest &request, std::function<void(const struct HttpResponse &, IOState &)> callback);
+
+private:
+    std::shared_ptr<net::io_context> mIoContext;
+    net::executor_work_guard<net::io_context::executor_type> workGuard;
+};
 
 void        open_url_browser(const std::string &url);
 std::string urlencode(const std::string &input);
@@ -43,8 +66,8 @@ struct HttpRequest {
     enum Type { GET, POST };
     std::string hostname;
     Type        requestType = GET;
-    std::string target;
-    FieldMap    headers;
+    std::string target = "/";
+    FieldMap    headers{};
     std::string body = {};
     std::string port = "443";
 };
