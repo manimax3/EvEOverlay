@@ -38,6 +38,6 @@ private:
     std::shared_ptr<EsiSession>           mEsiSession{};
     std::chrono::steady_clock::time_point lastCheck = std::chrono::steady_clock::now();
 
-    std::vector<std::tuple<esi::Character, std::string, int32, std::string>> cachedKillmails;
+    std::vector<std::tuple<esi::Character, std::string, int32, std::string, std::string>> cachedKillmails;
 };
 }

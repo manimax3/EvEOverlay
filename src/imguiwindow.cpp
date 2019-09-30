@@ -25,7 +25,7 @@
 #include "imgui.h"
 
 namespace {
-constexpr float font_size = 32.f;
+constexpr float font_size = 16.f;
 
 const char *vertex_shader = R"glsl(
 #version 330 core

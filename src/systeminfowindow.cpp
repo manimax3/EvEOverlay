@@ -24,8 +24,19 @@
 
 using json = nlohmann::json;
 
+namespace {
+std::string simplertimestring(const std::string &isotime)
+{
+    tm tm;
+    strptime(isotime.c_str(), "%FT%TZ", &tm);
+    std::array<char, 16> output = { 0 };
+    const auto           length = std::strftime(output.data(), output.size(), "%d/%m %R", &tm);
+    return std::string(output.data(), length);
+}
+}
+
 eo::SystemInfoWindow::SystemInfoWindow(std::shared_ptr<EsiSession> session)
-    : ImguiWindow(256, 256, "SystemInfoWindow", 0, 0)
+    : ImguiWindow(256, 256, "System Info Window", 0, 0)
     , mEsiSession(std::move(std::move(session)))
 {
     cachedKillmails.reserve(20);
@@ -54,10 +65,10 @@ void eo::SystemInfoWindow::fetchNextSystem(bool now)
                                 const int32 shipTypeID  = j.at("ship_type_id");
                                 mEsiSession->convertCharacterIDAsync(characterID, [&, shipTypeID, km, killmail](auto &&character) {
                                     cachedKillmails.emplace_back(character, mEsiSession->getTypeName(shipTypeID), km.killmailID,
-                                                                 killmail.killTime);
+                                                                 simplertimestring(killmail.killTime), killmail.killTime);
                                     // TODO im too lazy to do this more efficient
                                     std::sort(begin(cachedKillmails), end(cachedKillmails),
-                                              [](auto &&a, auto &&b) { return std::get<3>(a) > std::get<3>(b); });
+                                              [](auto &&a, auto &&b) { return std::get<4>(a) > std::get<4>(b); });
                                 });
                             } catch (const json::out_of_range &e) {
                             }
@@ -94,7 +105,7 @@ void eo::SystemInfoWindow::renderImguiContents()
         ImGui::Separator();
 
         if (ImGui::CollapsingHeader("Last killmails")) {
-            ImGui::Columns(3);
+            ImGui::Columns(4);
             for (const auto &km : cachedKillmails) {
                 ImGui::Text("%s", std::get<0>(km).name.c_str());
                 ImGui::NextColumn();
@@ -105,6 +116,9 @@ void eo::SystemInfoWindow::renderImguiContents()
                     open_url_browser(fmt::format("https://zkillboard.com/kill/{0}/", std::get<2>(km)));
                 }
                 ImGui::PopID();
+                ImGui::NextColumn();
+
+                ImGui::Text("%s", std::get<3>(km).c_str());
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
