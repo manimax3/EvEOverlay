@@ -85,19 +85,20 @@ public:
     explicit EsiSession(const db::SqliteSPtr &dbconnection, std::shared_ptr<IOState> iostate);
 
     // Looks up in the database if no entry then does and http request
-    esi::CharacterLocation getCharacterLocation();
+    [[deprecated]] esi::CharacterLocation getCharacterLocation();
 
     void getCharacterLocationAsync(std::function<void(const esi::CharacterLocation &)> callback);
 
-    esi::SolarSystem resolveSolarSystem(int32 soalarSystemID);
+    [[deprecated]] esi::SolarSystem resolveSolarSystem(int32 soalarSystemID);
 
     void resolveSolarSystemAsync(int32 soalarSystemID, std::function<void(const esi::SolarSystem &)> callback);
 
-    esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash);
+    [[deprecated]] esi::Killmail resolveKillmail(int32 killmailid, const std::string &killmailhash);
 
     void resolveKillmailAsync(int32 killmailid, const std::string &killmailhash, std::function<void(const esi::Killmail &)> callback);
 
-    std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit);
+    [[deprecated]] std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit);
+
     void getKillsInSystemAsync(int32 solarsystemid, int limit, std::function<void(const std::vector<esi::ZkbKill> &)> callback);
 
     void convertCharacterIDAsync(int32 characterid, std::function<void(const esi::Character &)> callback);
