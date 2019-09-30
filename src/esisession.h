@@ -64,6 +64,15 @@ namespace esi {
         bool        solo;
         bool        awox;
     };
+
+    struct Character {
+        int32       characterID;
+        int32       corpID;
+        int32       allianceID;
+        std::string birthday;
+        std::string name;
+        float       secStatus;
+    };
 }
 
 /*
@@ -90,6 +99,8 @@ public:
 
     std::vector<esi::ZkbKill> getKillsInSystem(int32 solarsystemid, int limit);
     void getKillsInSystemAsync(int32 solarsystemid, int limit, std::function<void(const std::vector<esi::ZkbKill> &)> callback);
+
+    void convertCharacterIDAsync(int32 characterid, std::function<void(const esi::Character &)> callback);
 
     std::string getTypeName(int32 invtypeid);
 

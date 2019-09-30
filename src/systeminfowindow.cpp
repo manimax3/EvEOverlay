@@ -28,7 +28,7 @@ eo::SystemInfoWindow::SystemInfoWindow(std::shared_ptr<EsiSession> session)
     : ImguiWindow(256, 256, "SystemInfoWindow", 0, 0)
     , mEsiSession(std::move(std::move(session)))
 {
-    cachedKillmails.reserve(3);
+    cachedKillmails.reserve(20);
     fetchNextSystem(true);
 }
 
@@ -45,14 +45,18 @@ void eo::SystemInfoWindow::fetchNextSystem(bool now)
                 cachedKillmails.clear();
                 cachedKillmails.reserve(3);
 
-                mEsiSession->getKillsInSystemAsync(location.systemID, 3, [&](auto &&killmails) {
+                mEsiSession->getKillsInSystemAsync(location.systemID, 20, [&](auto &&killmails) {
                     for (auto &&km : killmails) {
                         mEsiSession->resolveKillmailAsync(km.killmailID, km.killmailHash, [&](auto &&killmail) {
-                            const auto  j           = json::parse(killmail.victimJson);
-                            const int32 characterID = j.at("character_id");
-                            const int32 shipTypeID  = j.at("ship_type_id");
-
-                            cachedKillmails.emplace_back(std::to_string(characterID), mEsiSession->getTypeName(shipTypeID));
+                            const auto j = json::parse(killmail.victimJson);
+                            try {
+                                const int32 characterID = j.at("character_id");
+                                const int32 shipTypeID  = j.at("ship_type_id");
+                                mEsiSession->convertCharacterIDAsync(characterID, [&, shipTypeID](auto &&character) {
+                                    cachedKillmails.emplace_back(character, mEsiSession->getTypeName(shipTypeID));
+                                });
+                            } catch (const json::out_of_range &e) {
+                            }
                         });
                     }
                 });
@@ -85,10 +89,15 @@ void eo::SystemInfoWindow::renderImguiContents()
         ImGui::Columns(1);
         ImGui::Separator();
 
-        for (const auto &km : cachedKillmails) {
-            ImGui::Text("%s", std::get<0>(km).c_str());
-            ImGui::SameLine();
-            ImGui::Text("%s", std::get<1>(km).c_str());
+        if (ImGui::CollapsingHeader("Last killmails")) {
+            ImGui::Columns(2);
+            for (const auto &km : cachedKillmails) {
+                ImGui::Text("%s", std::get<0>(km).name.c_str());
+                ImGui::NextColumn();
+                ImGui::Text("%s", std::get<1>(km).c_str());
+                ImGui::NextColumn();
+            }
+            ImGui::Columns(1);
         }
     }
 }

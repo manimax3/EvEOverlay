@@ -415,6 +415,30 @@ void eo::EsiSession::getKillsInSystemAsync(int32 solarsystemid, int limit, std::
     });
 }
 
+void eo::EsiSession::convertCharacterIDAsync(int32 characterID, std::function<void(const esi::Character &)> callback)
+{
+    HttpRequest req;
+    req.hostname = "esi.evetech.net";
+    req.target   = fmt::format("/v4/characters/{0}/", characterID);
+
+    mIOState->makeAsyncHttpRequest(std::move(req), [characterID, callback = std::move(callback)](auto &&resp, auto &&) {
+        const auto     j = json::parse(resp.body);
+        esi::Character character;
+        try {
+            j.at("alliance_id").get_to(character.allianceID);
+        } catch (const json::out_of_range &) {
+            character.allianceID = 0;
+        }
+        j.at("corporation_id").get_to(character.corpID);
+        j.at("name").get_to(character.name);
+        j.at("birthday").get_to(character.birthday);
+        j.at("security_status").get_to(character.secStatus);
+        character.characterID = characterID;
+
+        callback(character);
+    });
+}
+
 std::string eo::EsiSession::getTypeName(int32 invtypeid)
 {
     auto stmt = db::make_statement(mDbConnection, "SELECT COUNT(*) FROM invTypes WHERE typeID = ?;");
