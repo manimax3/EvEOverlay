@@ -47,13 +47,17 @@ void eo::SystemInfoWindow::fetchNextSystem(bool now)
 
                 mEsiSession->getKillsInSystemAsync(location.systemID, 20, [&](auto &&killmails) {
                     for (auto &&km : killmails) {
-                        mEsiSession->resolveKillmailAsync(km.killmailID, km.killmailHash, [&](auto &&killmail) {
+                        mEsiSession->resolveKillmailAsync(km.killmailID, km.killmailHash, [&, km](auto &&killmail) {
                             const auto j = json::parse(killmail.victimJson);
                             try {
                                 const int32 characterID = j.at("character_id");
                                 const int32 shipTypeID  = j.at("ship_type_id");
-                                mEsiSession->convertCharacterIDAsync(characterID, [&, shipTypeID](auto &&character) {
-                                    cachedKillmails.emplace_back(character, mEsiSession->getTypeName(shipTypeID));
+                                mEsiSession->convertCharacterIDAsync(characterID, [&, shipTypeID, km, killmail](auto &&character) {
+                                    cachedKillmails.emplace_back(character, mEsiSession->getTypeName(shipTypeID), km.killmailID,
+                                                                 killmail.killTime);
+                                    // TODO im too lazy to do this more efficient
+                                    std::sort(begin(cachedKillmails), end(cachedKillmails),
+                                              [](auto &&a, auto &&b) { return std::get<3>(a) > std::get<3>(b); });
                                 });
                             } catch (const json::out_of_range &e) {
                             }
@@ -90,11 +94,17 @@ void eo::SystemInfoWindow::renderImguiContents()
         ImGui::Separator();
 
         if (ImGui::CollapsingHeader("Last killmails")) {
-            ImGui::Columns(2);
+            ImGui::Columns(3);
             for (const auto &km : cachedKillmails) {
                 ImGui::Text("%s", std::get<0>(km).name.c_str());
                 ImGui::NextColumn();
                 ImGui::Text("%s", std::get<1>(km).c_str());
+                ImGui::NextColumn();
+                ImGui::PushID(std::get<2>(km));
+                if (ImGui::Button("Open")) {
+                    open_url_browser(fmt::format("https://zkillboard.com/kill/{0}/", std::get<2>(km)));
+                }
+                ImGui::PopID();
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
