@@ -174,6 +174,11 @@ void eo::db::migrate_tables(sqlite3 &dbconnection, int from, int to)
         sqlite3_finalize(end_trans);
 
     } break;
+    case 4: {
+        sqlite3_exec(&dbconnection, "ALTER TABLE killmail ADD COLUMN killtime DEFAULT '';", nullptr, nullptr, nullptr);
+        sqlite3_exec(&dbconnection, "DELETE FROM killmail WHERE killtime = '';", nullptr, nullptr, nullptr);
+    } break;
+
     default:
         throw std::logic_error(fmt::format("Unsupported database migration. from version {0} to version {1}", from, to));
     }

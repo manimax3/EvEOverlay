@@ -265,7 +265,8 @@ Killmail eo::EsiSession::resolveKillmail(int32 killmailid, const std::string &ki
     sqlite3_step(stmt.get());
     if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
         Killmail km;
-        auto     select = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
+        auto     select
+            = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim, killtime FROM killmail WHERE id = ? AND hash = ?");
         sqlite3_bind_int(select.get(), 1, killmailid);
         sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
         sqlite3_step(select.get());
@@ -274,6 +275,7 @@ Killmail eo::EsiSession::resolveKillmail(int32 killmailid, const std::string &ki
         km.systemID      = sqlite3_column_int(select.get(), 0);
         km.attackersJson = db::column_get_string(select.get(), 1);
         km.victimJson    = db::column_get_string(select.get(), 2);
+        km.killTime      = db::column_get_string(select.get(), 3);
         return km;
     } else if (results == 0) {
         Killmail    km;
@@ -288,12 +290,14 @@ Killmail eo::EsiSession::resolveKillmail(int32 killmailid, const std::string &ki
         j.at("solar_system_id").get_to(km.systemID);
         km.attackersJson = j.at("attackers").dump();
         km.victimJson    = j.at("victim").dump();
-        stmt             = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?)");
+        km.killTime      = j.at("killmail_time");
+        stmt             = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?,?)");
         sqlite3_bind_int(stmt.get(), 1, km.killmailID);
         sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
         sqlite3_bind_int(stmt.get(), 3, km.systemID);
         sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
         sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
+        sqlite3_bind_text(stmt.get(), 6, km.killTime.c_str(), -1, nullptr);
         sqlite3_step(stmt.get());
         return km;
     } else {
@@ -309,7 +313,8 @@ void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &k
     sqlite3_step(stmt.get());
     if (const auto results = sqlite3_column_int(stmt.get(), 0); results == 1) {
         Killmail km;
-        auto     select = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim FROM killmail WHERE id = ? AND hash = ?");
+        auto     select
+            = db::make_statement(mDbConnection, "SELECT systemid, attackers, victim, killtime FROM killmail WHERE id = ? AND hash = ?");
         sqlite3_bind_int(select.get(), 1, killmailid);
         sqlite3_bind_text(select.get(), 2, killmailhash.c_str(), -1, nullptr);
         sqlite3_step(select.get());
@@ -318,6 +323,7 @@ void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &k
         km.systemID      = sqlite3_column_int(select.get(), 0);
         km.attackersJson = db::column_get_string(select.get(), 1);
         km.victimJson    = db::column_get_string(select.get(), 2);
+        km.killTime      = db::column_get_string(select.get(), 3);
         callback(km);
     } else if (results == 0) {
         HttpRequest req;
@@ -333,13 +339,15 @@ void eo::EsiSession::resolveKillmailAsync(int32 killmailid, const std::string &k
                 j.at("solar_system_id").get_to(km.systemID);
                 km.attackersJson = j.at("attackers").dump();
                 km.victimJson    = j.at("victim").dump();
+                km.killTime      = j.at("killmail_time");
                 callback(km);
-                auto stmt = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?)");
+                auto stmt = db::make_statement(mDbConnection, "INSERT INTO killmail VALUES(?,?,?,?,?,?)");
                 sqlite3_bind_int(stmt.get(), 1, km.killmailID);
                 sqlite3_bind_text(stmt.get(), 2, km.killmailHash.c_str(), -1, nullptr);
                 sqlite3_bind_int(stmt.get(), 3, km.systemID);
                 sqlite3_bind_text(stmt.get(), 4, km.attackersJson.c_str(), -1, nullptr);
                 sqlite3_bind_text(stmt.get(), 5, km.victimJson.c_str(), -1, nullptr);
+                sqlite3_bind_text(stmt.get(), 6, km.killTime.c_str(), -1, nullptr);
                 sqlite3_step(stmt.get());
             });
     } else {

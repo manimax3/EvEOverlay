@@ -52,6 +52,7 @@ namespace esi {
         int32       systemID;
         std::string attackersJson;
         std::string victimJson;
+        std::string killTime;
     };
 
     struct ZkbKill {
